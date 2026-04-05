@@ -4,7 +4,7 @@ local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TrueModMenu_V8"
+screenGui.Name = "TrueModMenu_V9"
 screenGui.ResetOnSpawn = false
 
 pcall(function()
@@ -172,14 +172,13 @@ task.spawn(function()
 	while true do pcall(updateWH) task.wait(0.5) end
 end)
 
--- Новый рабочий God Mode без потери взаимодействия
+-- God Mode
 btnGod.MouseButton1Click:Connect(function()
 	if not humanoid then return end
 	godEnabled = not godEnabled
 	toggleColor(btnGod, godEnabled, "God Mode: ВКЛ", "God Mode: ВЫКЛ")
 end)
 
--- Кадровая блокировка смерти и пополнение ХП
 RunService.RenderStepped:Connect(function()
 	if godEnabled and humanoid then
 		humanoid.Health = humanoid.MaxHealth
@@ -190,7 +189,7 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- Скрипт бесконечного прыжка
+-- Inf Jump
 btnInfJump.MouseButton1Click:Connect(function()
 	infJumpEnabled = not infJumpEnabled
 	toggleColor(btnInfJump, infJumpEnabled, "Inf Jump: ВКЛ", "Inf Jump: ВЫКЛ")
@@ -206,14 +205,16 @@ btnBoost.MouseButton1Click:Connect(function()
 	if hrp then hrp.AssemblyLinearVelocity = Vector3.new(0, 100, 0) end
 end)
 
+-- УСИЛЕННЫЙ NOCLIP
 btnNoclip.MouseButton1Click:Connect(function()
 	noclipEnabled = not noclipEnabled
 	toggleColor(btnNoclip, noclipEnabled, "Noclip: ВКЛ", "Noclip: ВЫКЛ")
 end)
 
-RunService.Stepped:Connect(function()
+RunService.PreSimulation:Connect(function()
 	if noclipEnabled and character then
-		for _, part in ipairs(character:GetChildren()) do
+		-- Цикл по абсолютно всем деталям персонажа, включая шляпы и оружие
+		for _, part in ipairs(character:GetDescendants()) do
 			if part:IsA("BasePart") then
 				part.CanCollide = false
 			end
