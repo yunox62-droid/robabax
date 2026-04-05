@@ -4,7 +4,7 @@ local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TrueModMenu_V13"
+screenGui.Name = "TrueModMenu_V14"
 screenGui.ResetOnSpawn = false
 
 pcall(function()
@@ -26,7 +26,7 @@ uiCornerObj.CornerRadius = UDim.new(0, 10)
 uiCornerObj.Parent = openButton
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 250, 0, 460) -- Немного увеличил высоту для новой кнопки
+mainFrame.Size = UDim2.new(0, 250, 0, 460)
 mainFrame.Position = UDim2.new(0.5, -125, 0.5, -230)
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.Visible = false
@@ -40,7 +40,7 @@ local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, 0, 0, 40)
 titleLabel.BackgroundTransparency = 1
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.Text = "True Mod Menu"
+titleLabel.Text = "No-Detect Menu"
 titleLabel.Font = Enum.Font.SourceSansBold
 titleLabel.TextSize = 20
 titleLabel.Parent = mainFrame
@@ -89,18 +89,19 @@ local function createTextBox(placeholder, yOffset)
 	return box
 end
 
-local btnAim = createModButton("Aim Assist: ВЫКЛ", 50)
+local btnAim = createModButton("Aim (Mouse): ВЫКЛ", 50)
 local btnWH = createModButton("WallHack: ВЫКЛ", 90)
 local btnTpClick = createModButton("Double Tap TP: ВЫКЛ", 130)
 local btnInfJump = createModButton("Inf Jump: ВЫКЛ", 170)
-local btnNoclip = createModButton("Noclip V2: ВЫКЛ", 210)
+local btnNoclip = createModButton("Noclip V3: ВЫКЛ", 210)
 
-local inputSpeed = createTextBox("Введите скорость (Напр. 60)", 260)
-local inputJump = createTextBox("Введите силу прыжка (Напр. 100)", 310)
+local inputSpeed = createTextBox("Введите скорость", 260)
+local inputJump = createTextBox("Введите силу прыжка", 310)
 
 openButton.MouseButton1Click:Connect(function() mainFrame.Visible = not mainFrame.Visible end)
 closeButton.MouseButton1Click:Connect(function() mainFrame.Visible = false end)
 
+-- Перетаскивание менюшки
 local dragging, dragStart, startPos
 titleLabel.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -121,8 +122,6 @@ local function toggleColor(btn, state, textOn, textOff)
 end
 
 local aimEnabled, whEnabled, tpEnabled, infJumpEnabled, noclipEnabled = false, false, false, false, false
-local highlights = {}
-
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
 local humanoid = character:WaitForChild("Humanoid")
@@ -131,47 +130,30 @@ localPlayer.CharacterAdded:Connect(function(newChar)
 	character = newChar hrp = newChar:WaitForChild("HumanoidRootPart") humanoid = newChar:WaitForChild("Humanoid")
 end)
 
--- МОДУЛЬ AIM С ПРОВЕРКОЙ СТЕН
+-- AIM V2 (Через виртуальный фокус на голову)
 btnAim.MouseButton1Click:Connect(function()
 	aimEnabled = not aimEnabled
-	toggleColor(btnAim, aimEnabled, "Aim Assist: ВКЛ", "Aim Assist: ВЫКЛ")
+	toggleColor(btnAim, aimEnabled, "Aim (Mouse): ВКЛ", "Aim (Mouse): ВЫКЛ")
 end)
-
-local function isVisible(targetPart)
-	local cam = workspace.CurrentCamera
-	if not cam or not hrp then return false end
-	
-	local raycastParams = RaycastParams.new()
-	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-	-- Игнорируем в луче себя и фейковые визуальные объекты
-	raycastParams.FilterDescendantsInstances = {character, screenGui}
-	
-	local direction = targetPart.Position - cam.CFrame.Position
-	local result = workspace:Raycast(cam.CFrame.Position, direction, raycastParams)
-	
-	-- Если луч ни обо что не ударился или ударился в самого противника/его части - значит он виден!
-	if not result or result.Instance:IsDescendantOf(targetPart.Parent) then
-		return true
-	end
-	return false
-end
 
 local function getClosestPlayer()
 	local closestPlayer = nil
 	local shortestDistance = math.huge
+	local cam = workspace.CurrentCamera
 	
 	for _, player in ipairs(Players:GetPlayers()) do
-		if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") and player.Character:FindFirstChild("Humanoid") then
-			if player.Character.Humanoid.Health > 0 then
-				local head = player.Character.Head
-				local dist = (hrp.Position - head.Position).Magnitude
+		if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") then
+			local head = player.Character.Head
+			local screenPos, onScreen = cam:WorldToViewportPoint(head.Position)
+			
+			if onScreen then
+				local mousePos = UserInputService:GetMouseLocation()
+				local dist = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
 				
-				if dist < shortestDistance then
-					-- Делаем проверку на видимость только для самого близкого найденного, чтобы не лагало
-					if isVisible(head) then
-						closestPlayer = player
-						shortestDistance = dist
-					end
+				-- Наводимся на того, кто ближе всего к ЦЕНТРУ экрана
+				if dist < shortestDistance and dist < 400 then 
+					closestPlayer = player
+					shortestDistance = dist
 				end
 			end
 		end
@@ -180,15 +162,38 @@ local function getClosestPlayer()
 end
 
 RunService.RenderStepped:Connect(function()
-	if aimEnabled and character and humanoid and humanoid.Health > 0 then
+	if aimEnabled and character then
 		local target = getClosestPlayer()
 		if target and target.Character and target.Character:FindFirstChild("Head") then
 			local cam = workspace.CurrentCamera
 			local head = target.Character.Head
 			
-			-- Плавная доводка (smoothness). 0.15 - чем меньше, тем плавнее наводка.
-			local targetCFrame = CFrame.new(cam.CFrame.Position, head.Position)
-			cam.CFrame = cam.CFrame:Lerp(targetCFrame, 0.15)
+			-- Вместо жесткого поворота камеры, мы заставляем персонажа смотреть на врага!
+			local lookAt = Vector3.new(head.Position.X, hrp.Position.Y, head.Position.Z)
+			hrp.CFrame = CFrame.lookAt(hrp.Position, lookAt)
+		end
+	end
+end)
+
+-- NOCLIP V3 (Через отключение физики персонажа локально)
+btnNoclip.MouseButton1Click:Connect(function()
+	noclipEnabled = not noclipEnabled
+	toggleColor(btnNoclip, noclipEnabled, "Noclip V3: ВКЛ", "Noclip V3: ВЫКЛ")
+end)
+
+RunService.RenderStepped:Connect(function()
+	if noclipEnabled and character then
+		-- Превращаем персонажа в "призрака" для движка физики
+		humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+		for _, part in ipairs(character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
+			end
+		end
+	elseif not noclipEnabled and character then
+		-- Возвращаем всё назад, когда выключаем
+		if humanoid:GetState() == Enum.HumanoidStateType.Physics then
+			humanoid:ChangeState(Enum.HumanoidStateType.Running)
 		end
 	end
 end)
@@ -228,26 +233,8 @@ UserInputService.JumpRequest:Connect(function()
 	if infJumpEnabled and humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
 end)
 
--- Noclip V2
-btnNoclip.MouseButton1Click:Connect(function()
-	noclipEnabled = not noclipEnabled
-	toggleColor(btnNoclip, noclipEnabled, "Noclip V2: ВКЛ", "Noclip V2: ВЫКЛ")
-end)
-
-RunService.RenderStepped:Connect(function(deltaTime)
-	if noclipEnabled and character and hrp and humanoid then
-		for _, part in ipairs(character:GetDescendants()) do
-			if part:IsA("BasePart") then part.CanCollide = false end
-		end
-		
-		if humanoid.MoveDirection.Magnitude > 0 then
-			local speedToUse = humanoid.WalkSpeed
-			hrp.CFrame = hrp.CFrame + (humanoid.MoveDirection * speedToUse * deltaTime)
-		end
-	end
-end)
-
 -- WH
+local highlights = {}
 task.spawn(function()
 	while true do
 		if whEnabled then
@@ -273,13 +260,13 @@ btnWH.MouseButton1Click:Connect(function()
 	end
 end)
 
+-- Настройки скорости и прыжков
 inputSpeed.FocusLost:Connect(function()
 	if humanoid then
 		local num = tonumber(inputSpeed.Text)
 		if num then humanoid.WalkSpeed = num end
 	end
 end)
-
 inputJump.FocusLost:Connect(function()
 	if humanoid then
 		local num = tonumber(inputJump.Text)
