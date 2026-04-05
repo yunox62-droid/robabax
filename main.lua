@@ -4,7 +4,7 @@ local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TrueModMenu_V11"
+screenGui.Name = "TrueModMenu_V12"
 screenGui.ResetOnSpawn = false
 
 pcall(function()
@@ -40,7 +40,7 @@ local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, 0, 0, 40)
 titleLabel.BackgroundTransparency = 1
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.Text = "Matrix Mod Menu"
+titleLabel.Text = "True Mod Menu"
 titleLabel.Font = Enum.Font.SourceSansBold
 titleLabel.TextSize = 20
 titleLabel.Parent = mainFrame
@@ -90,7 +90,7 @@ local function createTextBox(placeholder, yOffset)
 end
 
 local btnWH = createModButton("WallHack: ВЫКЛ", 50)
-local btnTpClick = createModButton("TP Click: ВЫКЛ", 90)
+local btnTpClick = createModButton("Double Tap TP: ВЫКЛ", 90)
 local btnInfJump = createModButton("Inf Jump: ВЫКЛ", 130)
 local btnNoclip = createModButton("Noclip V2: ВЫКЛ", 170)
 
@@ -130,20 +130,30 @@ localPlayer.CharacterAdded:Connect(function(newChar)
 	character = newChar hrp = newChar:WaitForChild("HumanoidRootPart") humanoid = newChar:WaitForChild("Humanoid")
 end)
 
--- TP CLICK
+-- TP CLICK С ДВОЙНЫМ НАЖАТИЕМ
+local lastClickTime = 0
 btnTpClick.MouseButton1Click:Connect(function()
 	tpEnabled = not tpEnabled
-	toggleColor(btnTpClick, tpEnabled, "TP Click: ВКЛ", "TP Click: ВЫКЛ")
+	toggleColor(btnTpClick, tpEnabled, "Double Tap TP: ВКЛ", "Double Tap TP: ВЫКЛ")
 end)
 
 UserInputService.InputBegan:Connect(function(input, processed)
 	if tpEnabled and not processed and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-		local cam = workspace.CurrentCamera
-		local unitRay = cam:ScreenPointToRay(input.Position.X, input.Position.Y)
-		local raycastResult = workspace:Raycast(unitRay.Origin, unitRay.Direction * 1000)
-		
-		if raycastResult and hrp then
-			hrp.CFrame = CFrame.new(raycastResult.Position + Vector3.new(0, 3, 0))
+		local currentTime = tick()
+		-- Если разница во времени между кликами меньше 0.3 секунды
+		if currentTime - lastClickTime < 0.3 then
+			local cam = workspace.CurrentCamera
+			local unitRay = cam:ScreenPointToRay(input.Position.X, input.Position.Y)
+			local raycastResult = workspace:Raycast(unitRay.Origin, unitRay.Direction * 1000)
+			
+			if raycastResult and hrp then
+				hrp.CFrame = CFrame.new(raycastResult.Position + Vector3.new(0, 3, 0))
+			end
+			-- Сбрасываем время после успешного тп
+			lastClickTime = 0
+		else
+			-- Запоминаем время первого клика
+			lastClickTime = currentTime
 		end
 	end
 end)
@@ -158,7 +168,7 @@ UserInputService.JumpRequest:Connect(function()
 	if infJumpEnabled and humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
 end)
 
--- УЛЬТИМАТИВНЫЙ NOCLIP V2 (МАТРИЦА)
+-- Noclip V2
 btnNoclip.MouseButton1Click:Connect(function()
 	noclipEnabled = not noclipEnabled
 	toggleColor(btnNoclip, noclipEnabled, "Noclip V2: ВКЛ", "Noclip V2: ВЫКЛ")
@@ -166,16 +176,12 @@ end)
 
 RunService.RenderStepped:Connect(function(deltaTime)
 	if noclipEnabled and character and hrp and humanoid then
-		-- Отключаем базовые столкновения на всякий случай
 		for _, part in ipairs(character:GetDescendants()) do
 			if part:IsA("BasePart") then part.CanCollide = false end
 		end
 		
-		-- Тот самый "матричный" проход:
-		-- Если игрок зажимает джойстик (начинает двигаться)
 		if humanoid.MoveDirection.Magnitude > 0 then
 			local speedToUse = humanoid.WalkSpeed
-			-- Смещаем координаты игрока вручную сквозь физику
 			hrp.CFrame = hrp.CFrame + (humanoid.MoveDirection * speedToUse * deltaTime)
 		end
 	end
