@@ -4,7 +4,7 @@ local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TrueModMenu_V10"
+screenGui.Name = "TrueModMenu_V11"
 screenGui.ResetOnSpawn = false
 
 pcall(function()
@@ -40,7 +40,7 @@ local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, 0, 0, 40)
 titleLabel.BackgroundTransparency = 1
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.Text = "True Mod Menu"
+titleLabel.Text = "Matrix Mod Menu"
 titleLabel.Font = Enum.Font.SourceSansBold
 titleLabel.TextSize = 20
 titleLabel.Parent = mainFrame
@@ -90,14 +90,12 @@ local function createTextBox(placeholder, yOffset)
 end
 
 local btnWH = createModButton("WallHack: ВЫКЛ", 50)
-local btnGod = createModButton("God Mode (Hard): ВЫКЛ", 90)
+local btnTpClick = createModButton("TP Click: ВЫКЛ", 90)
 local btnInfJump = createModButton("Inf Jump: ВЫКЛ", 130)
-local btnNoclip = createModButton("Noclip: ВЫКЛ", 170)
-local btnBoost = createModButton("Boost Up 🚀", 210)
-btnBoost.BackgroundColor3 = Color3.fromRGB(50, 150, 250)
+local btnNoclip = createModButton("Noclip V2: ВЫКЛ", 170)
 
-local inputSpeed = createTextBox("Введите скорость", 260)
-local inputJump = createTextBox("Введите силу прыжка", 310)
+local inputSpeed = createTextBox("Введите скорость (Напр. 60)", 220)
+local inputJump = createTextBox("Введите силу прыжка (Напр. 100)", 270)
 
 openButton.MouseButton1Click:Connect(function() mainFrame.Visible = not mainFrame.Visible end)
 closeButton.MouseButton1Click:Connect(function() mainFrame.Visible = false end)
@@ -121,7 +119,7 @@ local function toggleColor(btn, state, textOn, textOff)
 	else btn.BackgroundColor3 = Color3.fromRGB(200, 50, 50) btn.Text = textOff end
 end
 
-local whEnabled, godEnabled, infJumpEnabled, noclipEnabled = false, false, false, false
+local whEnabled, tpEnabled, infJumpEnabled, noclipEnabled = false, false, false, false
 local highlights = {}
 
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
@@ -130,99 +128,81 @@ local humanoid = character:WaitForChild("Humanoid")
 
 localPlayer.CharacterAdded:Connect(function(newChar)
 	character = newChar hrp = newChar:WaitForChild("HumanoidRootPart") humanoid = newChar:WaitForChild("Humanoid")
-	if noclipEnabled then noclipEnabled = false; toggleColor(btnNoclip, false, "Noclip: ВКЛ", "Noclip: ВЫКЛ") end
-	if infJumpEnabled then infJumpEnabled = false; toggleColor(btnInfJump, false, "Inf Jump: ВКЛ", "Inf Jump: ВЫКЛ") end
-	if godEnabled then godEnabled = false; toggleColor(btnGod, false, "God Mode (Hard): ВКЛ", "God Mode (Hard): ВЫКЛ") end
 end)
 
--- ЖЕСТКИЙ GOD MODE
-btnGod.MouseButton1Click:Connect(function()
-	if not character or not humanoid then return end
-	godEnabled = not godEnabled
-	toggleColor(btnGod, godEnabled, "God Mode (Hard): ВКЛ", "God Mode (Hard): ВЫКЛ")
-	
-	if godEnabled then
-		-- Ломаем скрипт урона внутри персонажа
-		pcall(function()
-			local scr = character:FindFirstChild("Health") or character:FindFirstChild("HealthScript")
-			if scr then scr.Disabled = true end
-		end)
-		
-		-- Замораживаем состояния смерти
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-		
-		-- Бесконечный цикл удержания ХП на клиенте
-		task.spawn(function()
-			while godEnabled do
-				if humanoid then
-					humanoid.Health = humanoid.MaxHealth
-				end
-				task.wait()
-			end
-		end)
-	else
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
-		-- Чтобы выключить его, персонажа придется перезаспавнить (сброситься)
-	end
+-- TP CLICK
+btnTpClick.MouseButton1Click:Connect(function()
+	tpEnabled = not tpEnabled
+	toggleColor(btnTpClick, tpEnabled, "TP Click: ВКЛ", "TP Click: ВЫКЛ")
 end)
 
--- WallHack
-local function updateWH()
-	if not whEnabled then return end
-	for _, player in ipairs(Players:GetPlayers()) do
-		if player == localPlayer then continue end
-		local char = player.Character
-		if char and char:FindFirstChild("HumanoidRootPart") and hrp then
-			local dist = (char.HumanoidRootPart.Position - hrp.Position).Magnitude
-			if dist <= 150 then
-				if not highlights[player] or highlights[player].Parent ~= char then
-					pcall(function()
-						local hl = Instance.new("Highlight")
-						hl.FillColor = Color3.fromRGB(255, 0, 0)
-						hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-						hl.Parent = char
-						highlights[player] = hl
-					end)
-				end
-			else
-				if highlights[player] then highlights[player]:Destroy(); highlights[player] = nil end
-			end
+UserInputService.InputBegan:Connect(function(input, processed)
+	if tpEnabled and not processed and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+		local cam = workspace.CurrentCamera
+		local unitRay = cam:ScreenPointToRay(input.Position.X, input.Position.Y)
+		local raycastResult = workspace:Raycast(unitRay.Origin, unitRay.Direction * 1000)
+		
+		if raycastResult and hrp then
+			hrp.CFrame = CFrame.new(raycastResult.Position + Vector3.new(0, 3, 0))
 		end
 	end
-end
-
-btnWH.MouseButton1Click:Connect(function()
-	whEnabled = not whEnabled
-	toggleColor(btnWH, whEnabled, "WallHack: ВКЛ", "WallHack: ВЫКЛ")
-	if not whEnabled then
-		for p, h in pairs(highlights) do pcall(function() h:Destroy() end) end
-		table.clear(highlights)
-	end
 end)
-task.spawn(function() while true do pcall(updateWH) task.wait(0.5) end end)
 
 -- Inf Jump
 btnInfJump.MouseButton1Click:Connect(function()
 	infJumpEnabled = not infJumpEnabled
 	toggleColor(btnInfJump, infJumpEnabled, "Inf Jump: ВКЛ", "Inf Jump: ВЫКЛ")
 end)
+
 UserInputService.JumpRequest:Connect(function()
 	if infJumpEnabled and humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
 end)
 
-btnBoost.MouseButton1Click:Connect(function()
-	if hrp then hrp.AssemblyLinearVelocity = Vector3.new(0, 100, 0) end
-end)
-
--- Noclip
+-- УЛЬТИМАТИВНЫЙ NOCLIP V2 (МАТРИЦА)
 btnNoclip.MouseButton1Click:Connect(function()
 	noclipEnabled = not noclipEnabled
-	toggleColor(btnNoclip, noclipEnabled, "Noclip: ВКЛ", "Noclip: ВЫКЛ")
+	toggleColor(btnNoclip, noclipEnabled, "Noclip V2: ВКЛ", "Noclip V2: ВЫКЛ")
 end)
-RunService.PreSimulation:Connect(function()
-	if noclipEnabled and character then
+
+RunService.RenderStepped:Connect(function(deltaTime)
+	if noclipEnabled and character and hrp and humanoid then
+		-- Отключаем базовые столкновения на всякий случай
 		for _, part in ipairs(character:GetDescendants()) do
 			if part:IsA("BasePart") then part.CanCollide = false end
+		end
+		
+		-- Тот самый "матричный" проход:
+		-- Если игрок зажимает джойстик (начинает двигаться)
+		if humanoid.MoveDirection.Magnitude > 0 then
+			local speedToUse = humanoid.WalkSpeed
+			-- Смещаем координаты игрока вручную сквозь физику
+			hrp.CFrame = hrp.CFrame + (humanoid.MoveDirection * speedToUse * deltaTime)
+		end
+	end
+end)
+
+-- WH
+task.spawn(function()
+	while true do
+		if whEnabled then
+			for _, player in ipairs(Players:GetPlayers()) do
+				if player ~= localPlayer and player.Character then
+					if not player.Character:FindFirstChild("Highlight") then
+						pcall(function() Instance.new("Highlight", player.Character) end)
+					end
+				end
+			end
+		end
+		task.wait(1)
+	end
+end)
+
+btnWH.MouseButton1Click:Connect(function()
+	whEnabled = not whEnabled
+	toggleColor(btnWH, whEnabled, "WallHack: ВКЛ", "WallHack: ВЫКЛ")
+	if not whEnabled then
+		for _, p in ipairs(Players:GetPlayers()) do
+			if p.Character and p.Character:FindFirstChild("Highlight") then p.Character.Highlight:Destroy() end
 		end
 	end
 end)
@@ -233,6 +213,7 @@ inputSpeed.FocusLost:Connect(function()
 		if num then humanoid.WalkSpeed = num end
 	end
 end)
+
 inputJump.FocusLost:Connect(function()
 	if humanoid then
 		local num = tonumber(inputJump.Text)
