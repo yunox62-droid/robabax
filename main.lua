@@ -195,8 +195,6 @@ localPlayer.CharacterAdded:Connect(function(newChar)
 		godEnabled = false
 		toggleColor(btnGod, false, "Immortality: ВКЛ", "Immortality: ВЫКЛ")
 	end
-	if godRenderConnection then godRenderConnection:Disconnect(); godRenderConnection = nil end
-	if flyPart then flyPart:Destroy(); flyPart = nil end
 	
 	if hrp then hrp.Anchored = false end
 	if humanoid then humanoid.PlatformStand = false end
@@ -251,60 +249,35 @@ task.spawn(function()
 	end
 end)
 
-local savedCFrame = nil
-local flyPart = nil
-local godRenderConnection = nil
+local godConnection = nil
 
 btnGod.MouseButton1Click:Connect(function()
-	if not hrp or not humanoid then return end
+	if not humanoid then return end
 	godEnabled = not godEnabled
 	toggleColor(btnGod, godEnabled, "Immortality: ВКЛ", "Immortality: ВЫКЛ")
 	
 	if godEnabled then
-		savedCFrame = hrp.CFrame
-		hrp.Anchored = true
-		humanoid.PlatformStand = true 
+		log("God Mode ON")
+		humanoid.Health = humanoid.MaxHealth
 		
-		flyPart = Instance.new("Part")
-		flyPart.Size = Vector3.new(2, 2, 1)
-		flyPart.CFrame = savedCFrame
-		flyPart.Anchored = true
-		flyPart.CanCollide = false
-		flyPart.Transparency = 1 
-		flyPart.Parent = workspace
+		godConnection = humanoid.HealthChanged:Connect(function(health)
+			if godEnabled and health < humanoid.MaxHealth then
+				humanoid.Health = humanoid.MaxHealth
+			end
+		end)
 		
-		local cam = workspace.CurrentCamera
-		cam.CameraSubject = flyPart
-		
-		godRenderConnection = RunService.RenderStepped:Connect(function(deltaTime)
-			local cam = workspace.CurrentCamera
-			local moveDirection = humanoid.MoveDirection
-			
-			if moveDirection.Magnitude > 0 then
-				local camLook = cam.CFrame.LookVector
-				local flatMove = Vector3.new(moveDirection.X, 0, moveDirection.Z).Unit
-				local forwardDot = flatMove:Dot(Vector3.new(cam.CFrame.LookVector.X, 0, cam.CFrame.LookVector.Z).Unit)
-				
-				local flyVector
-				if forwardDot > 0.5 then
-					flyVector = camLook * moveDirection.Magnitude
-				else
-					flyVector = moveDirection
+		task.spawn(function()
+			while godEnabled do
+				if humanoid and humanoid:GetState() == Enum.HumanoidStateType.Dead then
+					humanoid:ChangeState(Enum.HumanoidStateType.Running)
+					humanoid.Health = humanoid.MaxHealth
 				end
-				
-				flyPart.CFrame = flyPart.CFrame + (flyVector * flySpeed * deltaTime)
+				task.wait(0.1)
 			end
 		end)
 	else
-		if godRenderConnection then godRenderConnection:Disconnect(); godRenderConnection = nil end
-		if flyPart then flyPart:Destroy(); flyPart = nil end
-		
-		local cam = workspace.CurrentCamera
-		cam.CameraSubject = humanoid
-		
-		humanoid.PlatformStand = false
-		hrp.Anchored = false
-		hrp.CFrame = savedCFrame
+		log("God Mode OFF")
+		if godConnection then godConnection:Disconnect(); godConnection = nil end
 	end
 end)
 
@@ -347,7 +320,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 btnBoost.MouseButton1Click:Connect(function()
-	if hrp then hrp.AssemblyLinearVelocity = Vector3.new(0, 200, 0) end
+	if hrp then hrp.AssemblyLinearVelocity = Vector3.new(0, 100, 0) end
 end)
 
 btnNoclip.MouseButton1Click:Connect(function()
@@ -364,7 +337,7 @@ task.spawn(function()
 				end
 			end
 		end
-		task.wait(0.1)
+		task.wait(0.3)
 	end
 end)
 
