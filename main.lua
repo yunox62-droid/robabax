@@ -4,12 +4,12 @@ local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
 -- Защита от дублирования интерфейса
-if game:GetService("CoreGui"):FindFirstChild("TruePremiumMenu_V15") then
-	game:GetService("CoreGui").TruePremiumMenu_V15:Destroy()
+if game:GetService("CoreGui"):FindFirstChild("TruePremiumMenu_V16") then
+	game:GetService("CoreGui").TruePremiumMenu_V16:Destroy()
 end
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TruePremiumMenu_V15"
+screenGui.Name = "TruePremiumMenu_V16"
 screenGui.ResetOnSpawn = false
 pcall(function()
 	screenGui.Parent = game:GetService("CoreGui")
@@ -58,7 +58,7 @@ end)
 
 -- ================= КРАСИВОЕ ОСНОВНОЕ МЕНЮ =================
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 260, 0, 520) -- Увеличил высоту для нового поля
+mainFrame.Size = UDim2.new(0, 260, 0, 520)
 mainFrame.Position = UDim2.new(0.5, -130, 0.5, -260)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.Visible = false
@@ -78,7 +78,7 @@ local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, 0, 0, 45)
 titleLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.Text = "PREMIUM MENU V15"
+titleLabel.Text = "PREMIUM MENU V16"
 titleLabel.Font = Enum.Font.GothamBold
 titleLabel.TextSize = 14
 titleLabel.Parent = mainFrame
@@ -197,7 +197,7 @@ localPlayer.CharacterAdded:Connect(function(newChar)
 	character = newChar hrp = newChar:WaitForChild("HumanoidRootPart") humanoid = newChar:WaitForChild("Humanoid")
 end)
 
--- 🎯 HITBOXES С РЕГУЛИРОВКОЙ РАЗМЕРА
+-- 🎯 ВЕЧНЫЕ ХИТБОКСЫ (ПОСТОЯННЫЙ ЦИКЛ ПРОВЕРКИ)
 btnHitbox.MouseButton1Click:Connect(function()
 	hitboxEnabled = not hitboxEnabled
 	toggleColor(btnHitbox, strHitbox, hitboxEnabled, "Big Hitboxes: ВКЛ", "Big Hitboxes: ВЫКЛ")
@@ -208,27 +208,33 @@ inputHitboxSize.FocusLost:Connect(function()
 	if num then hitboxSize = num end
 end)
 
-task.spawn(function()
-	while true do
-		if hitboxEnabled then
-			for _, player in ipairs(Players:GetPlayers()) do
-				if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") then
-					local head = player.Character.Head
+-- Сама магия фикса тут:
+RunService.Heartbeat:Connect(function()
+	if hitboxEnabled then
+		for _, player in ipairs(Players:GetPlayers()) do
+			if player ~= localPlayer and player.Character then
+				local head = player.Character:FindFirstChild("Head")
+				local hum = player.Character:FindFirstChild("Humanoid")
+				
+				-- Проверяем, жив ли игрок и есть ли у него голова
+				if head and hum and hum.Health > 0 then
 					head.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
 					head.Transparency = 0.5
 					head.CanCollide = false
 				end
 			end
-		else
-			for _, player in ipairs(Players:GetPlayers()) do
-				if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") then
-					local head = player.Character.Head
+		end
+	else
+		-- Возвращаем всё к стандартным размерам, когда функция выключена
+		for _, player in ipairs(Players:GetPlayers()) do
+			if player ~= localPlayer and player.Character then
+				local head = player.Character:FindFirstChild("Head")
+				if head and head.Size ~= Vector3.new(2, 1, 1) then
 					head.Size = Vector3.new(2, 1, 1)
 					head.Transparency = 0
 				end
 			end
 		end
-		task.wait(1)
 	end
 end)
 
@@ -272,7 +278,7 @@ inputFlySpeed.FocusLost:Connect(function()
 	if num then flySpeed = num end
 end)
 
--- 🚪 100% РАБОЧИЙ NOCLIP V4 (ЧЕРЕЗ КАМЕРУ)
+-- 🚪 NOCLIP V4
 btnNoclip.MouseButton1Click:Connect(function()
 	noclipEnabled = not noclipEnabled
 	toggleColor(btnNoclip, strNoclip, noclipEnabled, "Noclip V4 (💯%): ВКЛ", "Noclip V4 (💯%): ВЫКЛ")
@@ -280,7 +286,6 @@ end)
 
 RunService.RenderStepped:Connect(function(deltaTime)
 	if noclipEnabled and character and hrp and humanoid then
-		-- Отключаем коллизии, чтобы не дергало в дверях
 		for _, part in ipairs(character:GetDescendants()) do
 			if part:IsA("BasePart") then part.CanCollide = false end
 		end
@@ -288,12 +293,9 @@ RunService.RenderStepped:Connect(function(deltaTime)
 		local cam = workspace.CurrentCamera
 		local moveDir = humanoid.MoveDirection
 		
-		-- Движение строго сквозь физику по направлению камеры
 		if moveDir.Magnitude > 0 then
 			hrp.CFrame = hrp.CFrame + (moveDir * 35 * deltaTime)
 		end
-		
-		-- Обнуляем падение под карту
 		hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 	end
 end)
