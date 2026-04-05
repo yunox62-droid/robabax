@@ -57,6 +57,16 @@ titleLabel.Font = Enum.Font.SourceSansBold
 titleLabel.TextSize = 20
 titleLabel.Parent = mainFrame
 
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -35, 0, 5)
+closeButton.BackgroundTransparency = 1
+closeButton.TextColor3 = Color3.fromRGB(200, 50, 50)
+closeButton.Text = "X"
+closeButton.Font = Enum.Font.SourceSansBold
+closeButton.TextSize = 20
+closeButton.Parent = mainFrame
+
 local function createModButton(text, yOffset)
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(0.9, 0, 0, 35)
@@ -103,11 +113,42 @@ btnBoost.BackgroundColor3 = Color3.fromRGB(50, 150, 250)
 local inputSpeed = createTextBox("Введите скорость (По умолчанию 16)", 260)
 local inputJump = createTextBox("Введите силу прыжка (По умолчанию 50)", 310)
 
-log("Buttons and inputs created")
+log("UI complete")
 
 openButton.MouseButton1Click:Connect(function()
 	mainFrame.Visible = not mainFrame.Visible
-	log("Menu visibility: " .. tostring(mainFrame.Visible))
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+	mainFrame.Visible = false
+end)
+
+local dragging, dragInput, dragStart, startPos
+titleLabel.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = mainFrame.Position
+		
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+titleLabel.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
 end)
 
 local function toggleColor(btn, state, textOn, textOff)
@@ -137,7 +178,6 @@ local humanoid = character:WaitForChild("Humanoid", 5)
 log("Character found")
 
 localPlayer.CharacterAdded:Connect(function(newChar)
-	log("Character respawned")
 	character = newChar
 	hrp = newChar:WaitForChild("HumanoidRootPart", 5)
 	humanoid = newChar:WaitForChild("Humanoid", 5)
@@ -192,7 +232,6 @@ end
 btnWH.MouseButton1Click:Connect(function()
 	whEnabled = not whEnabled
 	toggleColor(btnWH, whEnabled, "WallHack: ВКЛ", "WallHack: ВЫКЛ")
-	log("WH toggle: " .. tostring(whEnabled))
 	if not whEnabled then
 		for p, h in pairs(highlights) do pcall(function() h:Destroy() end) end
 		table.clear(highlights)
@@ -205,8 +244,7 @@ end)
 
 task.spawn(function()
 	while true do 
-		local s, e = pcall(updateWH)
-		if not s then log("WH Error: " .. tostring(e)) end
+		pcall(updateWH)
 		task.wait(0.5) 
 	end
 end)
@@ -216,14 +254,9 @@ local flyPart = nil
 local godRenderConnection = nil
 
 btnGod.MouseButton1Click:Connect(function()
-	if not hrp or not humanoid then 
-		log("HRP or Humanoid missing!")
-		return 
-	end
-	
+	if not hrp or not humanoid then return end
 	godEnabled = not godEnabled
 	toggleColor(btnGod, godEnabled, "Immortality: ВКЛ", "Immortality: ВЫКЛ")
-	log("God toggle: " .. tostring(godEnabled))
 	
 	if godEnabled then
 		savedCFrame = hrp.CFrame
@@ -264,7 +297,6 @@ btnFly.MouseButton1Click:Connect(function()
 	if not hrp or not humanoid then return end
 	flyEnabled = not flyEnabled
 	toggleColor(btnFly, flyEnabled, "Fly: ВКЛ", "Fly: ВЫКЛ")
-	log("Fly toggle: " .. tostring(flyEnabled))
 	
 	if flyEnabled then
 		humanoid.PlatformStand = true
@@ -300,18 +332,12 @@ RunService.RenderStepped:Connect(function()
 end)
 
 btnBoost.MouseButton1Click:Connect(function()
-	if hrp then 
-		hrp.AssemblyLinearVelocity = Vector3.new(0, 200, 0) 
-		log("Boost applied")
-	else
-		log("Boost failed: HRP missing")
-	end
+	if hrp then hrp.AssemblyLinearVelocity = Vector3.new(0, 200, 0) end
 end)
 
 btnNoclip.MouseButton1Click:Connect(function()
 	noclipEnabled = not noclipEnabled
 	toggleColor(btnNoclip, noclipEnabled, "Noclip: ВКЛ", "Noclip: ВЫКЛ")
-	log("Noclip toggle: " .. tostring(noclipEnabled))
 end)
 
 task.spawn(function()
@@ -327,27 +353,19 @@ task.spawn(function()
 	end
 end)
 
-inputSpeed.FocusLost:Connect(function(enterPressed)
+inputSpeed.FocusLost:Connect(function()
 	if humanoid then
 		local num = tonumber(inputSpeed.Text)
-		if num then
-			humanoid.WalkSpeed = num
-			log("WalkSpeed set to: " .. num)
-		else
-			log("Invalid Speed input")
-		end
+		if num then humanoid.WalkSpeed = num end
 	end
 end)
 
-inputJump.FocusLost:Connect(function(enterPressed)
+inputJump.FocusLost:Connect(function()
 	if humanoid then
 		local num = tonumber(inputJump.Text)
 		if num then
 			humanoid.UseJumpPower = true
 			humanoid.JumpPower = num
-			log("JumpPower set to: " .. num)
-		else
-			log("Invalid Jump input")
 		end
 	end
 end)
