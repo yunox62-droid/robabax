@@ -4,7 +4,7 @@ local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TrueModMenu_V12"
+screenGui.Name = "TrueModMenu_V13"
 screenGui.ResetOnSpawn = false
 
 pcall(function()
@@ -26,8 +26,8 @@ uiCornerObj.CornerRadius = UDim.new(0, 10)
 uiCornerObj.Parent = openButton
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 250, 0, 420)
-mainFrame.Position = UDim2.new(0.5, -125, 0.5, -210)
+mainFrame.Size = UDim2.new(0, 250, 0, 460) -- Немного увеличил высоту для новой кнопки
+mainFrame.Position = UDim2.new(0.5, -125, 0.5, -230)
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.Visible = false
 mainFrame.Parent = screenGui
@@ -89,13 +89,14 @@ local function createTextBox(placeholder, yOffset)
 	return box
 end
 
-local btnWH = createModButton("WallHack: ВЫКЛ", 50)
-local btnTpClick = createModButton("Double Tap TP: ВЫКЛ", 90)
-local btnInfJump = createModButton("Inf Jump: ВЫКЛ", 130)
-local btnNoclip = createModButton("Noclip V2: ВЫКЛ", 170)
+local btnAim = createModButton("Aim Assist: ВЫКЛ", 50)
+local btnWH = createModButton("WallHack: ВЫКЛ", 90)
+local btnTpClick = createModButton("Double Tap TP: ВЫКЛ", 130)
+local btnInfJump = createModButton("Inf Jump: ВЫКЛ", 170)
+local btnNoclip = createModButton("Noclip V2: ВЫКЛ", 210)
 
-local inputSpeed = createTextBox("Введите скорость (Напр. 60)", 220)
-local inputJump = createTextBox("Введите силу прыжка (Напр. 100)", 270)
+local inputSpeed = createTextBox("Введите скорость (Напр. 60)", 260)
+local inputJump = createTextBox("Введите силу прыжка (Напр. 100)", 310)
 
 openButton.MouseButton1Click:Connect(function() mainFrame.Visible = not mainFrame.Visible end)
 closeButton.MouseButton1Click:Connect(function() mainFrame.Visible = false end)
@@ -119,7 +120,7 @@ local function toggleColor(btn, state, textOn, textOff)
 	else btn.BackgroundColor3 = Color3.fromRGB(200, 50, 50) btn.Text = textOff end
 end
 
-local whEnabled, tpEnabled, infJumpEnabled, noclipEnabled = false, false, false, false
+local aimEnabled, whEnabled, tpEnabled, infJumpEnabled, noclipEnabled = false, false, false, false, false
 local highlights = {}
 
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
@@ -130,7 +131,69 @@ localPlayer.CharacterAdded:Connect(function(newChar)
 	character = newChar hrp = newChar:WaitForChild("HumanoidRootPart") humanoid = newChar:WaitForChild("Humanoid")
 end)
 
--- TP CLICK С ДВОЙНЫМ НАЖАТИЕМ
+-- МОДУЛЬ AIM С ПРОВЕРКОЙ СТЕН
+btnAim.MouseButton1Click:Connect(function()
+	aimEnabled = not aimEnabled
+	toggleColor(btnAim, aimEnabled, "Aim Assist: ВКЛ", "Aim Assist: ВЫКЛ")
+end)
+
+local function isVisible(targetPart)
+	local cam = workspace.CurrentCamera
+	if not cam or not hrp then return false end
+	
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+	-- Игнорируем в луче себя и фейковые визуальные объекты
+	raycastParams.FilterDescendantsInstances = {character, screenGui}
+	
+	local direction = targetPart.Position - cam.CFrame.Position
+	local result = workspace:Raycast(cam.CFrame.Position, direction, raycastParams)
+	
+	-- Если луч ни обо что не ударился или ударился в самого противника/его части - значит он виден!
+	if not result or result.Instance:IsDescendantOf(targetPart.Parent) then
+		return true
+	end
+	return false
+end
+
+local function getClosestPlayer()
+	local closestPlayer = nil
+	local shortestDistance = math.huge
+	
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") and player.Character:FindFirstChild("Humanoid") then
+			if player.Character.Humanoid.Health > 0 then
+				local head = player.Character.Head
+				local dist = (hrp.Position - head.Position).Magnitude
+				
+				if dist < shortestDistance then
+					-- Делаем проверку на видимость только для самого близкого найденного, чтобы не лагало
+					if isVisible(head) then
+						closestPlayer = player
+						shortestDistance = dist
+					end
+				end
+			end
+		end
+	end
+	return closestPlayer
+end
+
+RunService.RenderStepped:Connect(function()
+	if aimEnabled and character and humanoid and humanoid.Health > 0 then
+		local target = getClosestPlayer()
+		if target and target.Character and target.Character:FindFirstChild("Head") then
+			local cam = workspace.CurrentCamera
+			local head = target.Character.Head
+			
+			-- Плавная доводка (smoothness). 0.15 - чем меньше, тем плавнее наводка.
+			local targetCFrame = CFrame.new(cam.CFrame.Position, head.Position)
+			cam.CFrame = cam.CFrame:Lerp(targetCFrame, 0.15)
+		end
+	end
+end)
+
+-- Double Tap TP
 local lastClickTime = 0
 btnTpClick.MouseButton1Click:Connect(function()
 	tpEnabled = not tpEnabled
@@ -140,7 +203,6 @@ end)
 UserInputService.InputBegan:Connect(function(input, processed)
 	if tpEnabled and not processed and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
 		local currentTime = tick()
-		-- Если разница во времени между кликами меньше 0.3 секунды
 		if currentTime - lastClickTime < 0.3 then
 			local cam = workspace.CurrentCamera
 			local unitRay = cam:ScreenPointToRay(input.Position.X, input.Position.Y)
@@ -149,10 +211,8 @@ UserInputService.InputBegan:Connect(function(input, processed)
 			if raycastResult and hrp then
 				hrp.CFrame = CFrame.new(raycastResult.Position + Vector3.new(0, 3, 0))
 			end
-			-- Сбрасываем время после успешного тп
 			lastClickTime = 0
 		else
-			-- Запоминаем время первого клика
 			lastClickTime = currentTime
 		end
 	end
