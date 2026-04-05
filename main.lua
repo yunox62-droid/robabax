@@ -275,9 +275,22 @@ btnGod.MouseButton1Click:Connect(function()
 		cam.CameraSubject = flyPart
 		
 		godRenderConnection = RunService.RenderStepped:Connect(function(deltaTime)
+			local cam = workspace.CurrentCamera
 			local moveDirection = humanoid.MoveDirection
+			
 			if moveDirection.Magnitude > 0 then
-				flyPart.CFrame = flyPart.CFrame + (moveDirection * flySpeed * deltaTime)
+				local camLook = cam.CFrame.LookVector
+				local flatMove = Vector3.new(moveDirection.X, 0, moveDirection.Z).Unit
+				local forwardDot = flatMove:Dot(Vector3.new(cam.CFrame.LookVector.X, 0, cam.CFrame.LookVector.Z).Unit)
+				
+				local flyVector
+				if forwardDot > 0.5 then
+					flyVector = camLook * moveDirection.Magnitude
+				else
+					flyVector = moveDirection
+				end
+				
+				flyPart.CFrame = flyPart.CFrame + (flyVector * flySpeed * deltaTime)
 			end
 		end)
 	else
