@@ -4,7 +4,7 @@ local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TrueModMenu_V3"
+screenGui.Name = "TrueModMenu_V4"
 screenGui.ResetOnSpawn = false
 
 pcall(function()
@@ -147,6 +147,8 @@ local noclipEnabled = false
 local whRadius = 150
 local highlights = {}
 local flySpeed = 50
+local flyUp = false
+local flyDown = false
 
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
@@ -201,45 +203,94 @@ task.spawn(function()
 	end
 end)
 
+local godConnection = nil
 btnGod.MouseButton1Click:Connect(function()
-	if not character or not humanoid then return end
+	if not humanoid then return end
 	godEnabled = not godEnabled
 	toggleColor(btnGod, godEnabled, "Immortality: ВКЛ", "Immortality: ВЫКЛ")
 	
 	if godEnabled then
-		local clone = humanoid:Clone()
-		clone.Parent = character
-		localPlayer.Character = nil
-		humanoid:Destroy()
-		localPlayer.Character = character
-		humanoid = clone
+		humanoid.Health = humanoid.MaxHealth
+		godConnection = humanoid.HealthChanged:Connect(function(health)
+			if godEnabled and health < humanoid.MaxHealth then
+				humanoid.Health = humanoid.MaxHealth
+			end
+		end)
 	else
-		if humanoid then humanoid.Health = 0 end
+		if godConnection then godConnection:Disconnect(); godConnection = nil end
 	end
 end)
 
+local upBtn = Instance.new("TextButton")
+local downBtn = Instance.new("TextButton")
+
+upBtn.Size = UDim2.new(0, 40, 0, 40)
+upBtn.Position = UDim2.new(1, -50, 0.5, -45)
+upBtn.BackgroundColor3 = Color3.fromRGB(35,35,35)
+upBtn.TextColor3 = Color3.fromRGB(255,255,255)
+upBtn.Text = "▲"
+upBtn.Font = Enum.Font.SourceSansBold
+upBtn.TextSize = 20
+upBtn.Visible = false
+upBtn.Parent = screenGui
+local c1 = Instance.new("UICorner") c1.CornerRadius = UDim.new(0, 8) c1.Parent = upBtn
+
+downBtn.Size = UDim2.new(0, 40, 0, 40)
+downBtn.Position = UDim2.new(1, -50, 0.5, 5)
+downBtn.BackgroundColor3 = Color3.fromRGB(35,35,35)
+downBtn.TextColor3 = Color3.fromRGB(255,255,255)
+downBtn.Text = "▼"
+downBtn.Font = Enum.Font.SourceSansBold
+downBtn.TextSize = 20
+downBtn.Visible = false
+downBtn.Parent = screenGui
+local c2 = Instance.new("UICorner") c2.CornerRadius = UDim.new(0, 8) c2.Parent = downBtn
+
+upBtn.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then flyUp = true end end)
+upBtn.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then flyUp = false end end)
+downBtn.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then flyDown = true end end)
+downBtn.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then flyDown = false end end)
+
+local bv, bg
 btnFly.MouseButton1Click:Connect(function()
 	if not hrp then return end
 	flyEnabled = not flyEnabled
 	toggleColor(btnFly, flyEnabled, "Fly: ВКЛ", "Fly: ВЫКЛ")
+	
+	upBtn.Visible = flyEnabled
+	downBtn.Visible = flyEnabled
+	
 	if flyEnabled then
+		bv = Instance.new("BodyVelocity")
+		bv.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+		bv.Velocity = Vector3.new(0,0,0)
+		bv.Parent = hrp
+		
+		bg = Instance.new("BodyGyro")
+		bg.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
+		bg.CFrame = hrp.CFrame
+		bg.Parent = hrp
+		
 		humanoid.PlatformStand = true
 	else
+		if bv then bv:Destroy() end
+		if bg then bg:Destroy() end
 		humanoid.PlatformStand = false
 	end
 end)
 
-RunService.RenderStepped:Connect(function(deltaTime)
-	if flyEnabled and hrp then
+RunService.RenderStepped:Connect(function()
+	if flyEnabled and hrp and bv and bg then
 		local cam = workspace.CurrentCamera
 		local moveDirection = humanoid.MoveDirection
-		if moveDirection.Magnitude > 0 then
-			local camLook = cam.CFrame.LookVector
-			hrp.CFrame = hrp.CFrame + (camLook * moveDirection.Magnitude * flySpeed * deltaTime)
-			hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-		else
-			hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-		end
+		bg.CFrame = cam.CFrame
+		
+		local velocity = moveDirection * flySpeed
+		local verticalSpeed = 0
+		if flyUp then verticalSpeed = flySpeed end
+		if flyDown then verticalSpeed = -flySpeed end
+		
+		bv.Velocity = Vector3.new(velocity.X, verticalSpeed, velocity.Z)
 	end
 end)
 
@@ -252,9 +303,9 @@ btnNoclip.MouseButton1Click:Connect(function()
 	toggleColor(btnNoclip, noclipEnabled, "Noclip: ВКЛ", "Noclip: ВЫКЛ")
 end)
 
-RunService.Stepped:Connect(function()
+RunService.RenderStepped:Connect(function()
 	if noclipEnabled and character then
-		for _, part in ipairs(character:GetChildren()) do
+		for _, part in ipairs(character:GetDescendants()) do
 			if part:IsA("BasePart") then
 				part.CanCollide = false
 			end
