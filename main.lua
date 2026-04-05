@@ -3,25 +3,13 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
-local function log(message)
-	print("[ModMenu Log]: " .. tostring(message))
-end
-
-log("Start initialization...")
-
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "FinalTrueModMenu"
+screenGui.Name = "TrueModMenu_V3"
 screenGui.ResetOnSpawn = false
 
-local successPG, errPG = pcall(function()
+pcall(function()
 	screenGui.Parent = localPlayer:WaitForChild("PlayerGui")
 end)
-
-if successPG then
-	log("UI added to PlayerGui")
-else
-	log("CRITICAL ERROR: " .. tostring(errPG))
-end
 
 local openButton = Instance.new("TextButton")
 openButton.Size = UDim2.new(0, 50, 0, 50)
@@ -77,7 +65,6 @@ local function createModButton(text, yOffset)
 	btn.Font = Enum.Font.SourceSansBold
 	btn.TextSize = 14
 	btn.Parent = mainFrame
-	
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, 8)
 	corner.Parent = btn
@@ -96,7 +83,6 @@ local function createTextBox(placeholder, yOffset)
 	box.TextSize = 14
 	box.Text = ""
 	box.Parent = mainFrame
-	
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, 8)
 	corner.Parent = box
@@ -112,8 +98,6 @@ btnBoost.BackgroundColor3 = Color3.fromRGB(50, 150, 250)
 
 local inputSpeed = createTextBox("Введите скорость (По умолчанию 16)", 260)
 local inputJump = createTextBox("Введите силу прыжка (По умолчанию 50)", 310)
-
-log("UI complete")
 
 openButton.MouseButton1Click:Connect(function()
 	mainFrame.Visible = not mainFrame.Visible
@@ -132,11 +116,8 @@ titleLabel.InputBegan:Connect(function(input)
 		dragging = true
 		dragStart = input.Position
 		startPos = mainFrame.Position
-		
 		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then
-				dragging = false
-			end
+			if input.UserInputState == Enum.UserInputState.End then dragging = false end
 		end)
 	end
 end)
@@ -144,12 +125,7 @@ end)
 UserInputService.InputChanged:Connect(function(input)
 	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 		local delta = input.Position - dragStart
-		mainFrame.Position = UDim2.new(
-			startPos.X.Scale, 
-			startPos.X.Offset + delta.X, 
-			startPos.Y.Scale, 
-			startPos.Y.Offset + delta.Y
-		)
+		mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 	end
 end)
 
@@ -170,39 +146,19 @@ local noclipEnabled = false
 
 local whRadius = 150
 local highlights = {}
-local bodyGyro, bodyVelocity
 local flySpeed = 50
 
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
-local hrp = character:WaitForChild("HumanoidRootPart", 5)
-local humanoid = character:WaitForChild("Humanoid", 5)
-
-log("Character found")
+local hrp = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
 
 localPlayer.CharacterAdded:Connect(function(newChar)
 	character = newChar
-	hrp = newChar:WaitForChild("HumanoidRootPart", 5)
-	humanoid = newChar:WaitForChild("Humanoid", 5)
-	
-	if flyEnabled then
-		flyEnabled = false
-		toggleColor(btnFly, false, "Fly: ВКЛ", "Fly: ВЫКЛ")
-	end
-	if bodyGyro then bodyGyro:Destroy(); bodyGyro = nil end
-	if bodyVelocity then bodyVelocity:Destroy(); bodyVelocity = nil end
-	
-	if godEnabled then
-		godEnabled = false
-		toggleColor(btnGod, false, "Immortality: ВКЛ", "Immortality: ВЫКЛ")
-	end
-	
-	if hrp then hrp.Anchored = false end
-	if humanoid then humanoid.PlatformStand = false end
-	
-	if noclipEnabled then
-		noclipEnabled = false
-		toggleColor(btnNoclip, false, "Noclip: ВКЛ", "Noclip: ВЫКЛ")
-	end
+	hrp = newChar:WaitForChild("HumanoidRootPart")
+	humanoid = newChar:WaitForChild("Humanoid")
+	if noclipEnabled then noclipEnabled = false; toggleColor(btnNoclip, false, "Noclip: ВКЛ", "Noclip: ВЫКЛ") end
+	if flyEnabled then flyEnabled = false; toggleColor(btnFly, false, "Fly: ВКЛ", "Fly: ВЫКЛ") end
+	if godEnabled then godEnabled = false; toggleColor(btnGod, false, "Immortality: ВКЛ", "Immortality: ВЫКЛ") end
 end)
 
 local function updateWH()
@@ -238,10 +194,6 @@ btnWH.MouseButton1Click:Connect(function()
 	end
 end)
 
-Players.PlayerRemoving:Connect(function(player)
-	if highlights[player] then highlights[player]:Destroy(); highlights[player] = nil end
-end)
-
 task.spawn(function()
 	while true do 
 		pcall(updateWH)
@@ -249,72 +201,44 @@ task.spawn(function()
 	end
 end)
 
-local godConnection = nil
-
 btnGod.MouseButton1Click:Connect(function()
-	if not humanoid then return end
+	if not character or not humanoid then return end
 	godEnabled = not godEnabled
 	toggleColor(btnGod, godEnabled, "Immortality: ВКЛ", "Immortality: ВЫКЛ")
 	
 	if godEnabled then
-		log("God Mode ON")
-		humanoid.Health = humanoid.MaxHealth
-		
-		godConnection = humanoid.HealthChanged:Connect(function(health)
-			if godEnabled and health < humanoid.MaxHealth then
-				humanoid.Health = humanoid.MaxHealth
-			end
-		end)
-		
-		task.spawn(function()
-			while godEnabled do
-				if humanoid and humanoid:GetState() == Enum.HumanoidStateType.Dead then
-					humanoid:ChangeState(Enum.HumanoidStateType.Running)
-					humanoid.Health = humanoid.MaxHealth
-				end
-				task.wait(0.1)
-			end
-		end)
+		local clone = humanoid:Clone()
+		clone.Parent = character
+		localPlayer.Character = nil
+		humanoid:Destroy()
+		localPlayer.Character = character
+		humanoid = clone
 	else
-		log("God Mode OFF")
-		if godConnection then godConnection:Disconnect(); godConnection = nil end
+		if humanoid then humanoid.Health = 0 end
 	end
 end)
 
 btnFly.MouseButton1Click:Connect(function()
-	if not hrp or not humanoid then return end
+	if not hrp then return end
 	flyEnabled = not flyEnabled
 	toggleColor(btnFly, flyEnabled, "Fly: ВКЛ", "Fly: ВЫКЛ")
-	
 	if flyEnabled then
 		humanoid.PlatformStand = true
-		bodyGyro = Instance.new("BodyGyro")
-		bodyGyro.P = 9e4
-		bodyGyro.MaxTorque = Vector3.new(9e5, 9e5, 9e5)
-		bodyGyro.CFrame = hrp.CFrame
-		bodyGyro.Parent = hrp
-		
-		bodyVelocity = Instance.new("BodyVelocity")
-		bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-		bodyVelocity.MaxForce = Vector3.new(9e5, 9e5, 9e5)
-		bodyVelocity.Parent = hrp
 	else
 		humanoid.PlatformStand = false
-		if bodyGyro then bodyGyro:Destroy(); bodyGyro = nil end
-		if bodyVelocity then bodyVelocity:Destroy(); bodyVelocity = nil end
 	end
 end)
 
-RunService.RenderStepped:Connect(function()
-	if flyEnabled and hrp and bodyVelocity and bodyGyro then
+RunService.RenderStepped:Connect(function(deltaTime)
+	if flyEnabled and hrp then
 		local cam = workspace.CurrentCamera
 		local moveDirection = humanoid.MoveDirection
-		
-		bodyGyro.CFrame = cam.CFrame
 		if moveDirection.Magnitude > 0 then
-			bodyVelocity.Velocity = moveDirection * flySpeed
+			local camLook = cam.CFrame.LookVector
+			hrp.CFrame = hrp.CFrame + (camLook * moveDirection.Magnitude * flySpeed * deltaTime)
+			hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 		else
-			bodyVelocity.Velocity = Vector3.new(0,0,0)
+			hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 		end
 	end
 end)
@@ -328,16 +252,13 @@ btnNoclip.MouseButton1Click:Connect(function()
 	toggleColor(btnNoclip, noclipEnabled, "Noclip: ВКЛ", "Noclip: ВЫКЛ")
 end)
 
-task.spawn(function()
-	while true do
-		if noclipEnabled and character then
-			for _, part in ipairs(character:GetChildren()) do
-				if part:IsA("BasePart") and part.Name ~= "LeftLeg" and part.Name ~= "RightLeg" and part.Name ~= "Left Foot" and part.Name ~= "Right Foot" then
-					part.CanCollide = false
-				end
+RunService.Stepped:Connect(function()
+	if noclipEnabled and character then
+		for _, part in ipairs(character:GetChildren()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
 			end
 		end
-		task.wait(0.3)
 	end
 end)
 
@@ -357,5 +278,3 @@ inputJump.FocusLost:Connect(function()
 		end
 	end
 end)
-
-log("Initialization complete")
