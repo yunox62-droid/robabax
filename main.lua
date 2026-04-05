@@ -3,13 +3,12 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
--- Защита от дублирования интерфейса
-if game:GetService("CoreGui"):FindFirstChild("TruePremiumMenu_V16") then
-	game:GetService("CoreGui").TruePremiumMenu_V16:Destroy()
+if game:GetService("CoreGui"):FindFirstChild("TruePremiumMenu_V17") then
+	game:GetService("CoreGui").TruePremiumMenu_V17:Destroy()
 end
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TruePremiumMenu_V16"
+screenGui.Name = "TruePremiumMenu_V17"
 screenGui.ResetOnSpawn = false
 pcall(function()
 	screenGui.Parent = game:GetService("CoreGui")
@@ -18,7 +17,6 @@ if not screenGui.Parent then
 	screenGui.Parent = localPlayer:WaitForChild("PlayerGui")
 end
 
--- ================= КНОПКА-ЗНАЧОК (ПЕРЕТАСКИВАЕМАЯ) =================
 local openButton = Instance.new("TextButton")
 openButton.Size = UDim2.new(0, 50, 0, 50)
 openButton.Position = UDim2.new(0, 10, 0, 10)
@@ -56,10 +54,9 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
--- ================= КРАСИВОЕ ОСНОВНОЕ МЕНЮ =================
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 260, 0, 520)
-mainFrame.Position = UDim2.new(0.5, -130, 0.5, -260)
+mainFrame.Size = UDim2.new(0, 260, 0, 630)
+mainFrame.Position = UDim2.new(0.5, -130, 0.5, -315)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.Visible = false
 mainFrame.ClipsDescendants = true
@@ -78,7 +75,7 @@ local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, 0, 0, 45)
 titleLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.Text = "PREMIUM MENU V16"
+titleLabel.Text = "PREMIUM MENU V17"
 titleLabel.Font = Enum.Font.GothamBold
 titleLabel.TextSize = 14
 titleLabel.Parent = mainFrame
@@ -95,17 +92,17 @@ closeButton.Parent = mainFrame
 
 local function createModButton(text, yOffset)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0.9, 0, 0, 35)
+	btn.Size = UDim2.new(0.9, 0, 0, 30)
 	btn.Position = UDim2.new(0.05, 0, 0, yOffset)
 	btn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 	btn.TextColor3 = Color3.fromRGB(200, 200, 200)
 	btn.Text = text
 	btn.Font = Enum.Font.GothamBold
-	btn.TextSize = 13
+	btn.TextSize = 12
 	btn.Parent = mainFrame
 	
 	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 8)
+	corner.CornerRadius = UDim.new(0, 6)
 	corner.Parent = btn
 	
 	local stroke = Instance.new("UIStroke")
@@ -118,19 +115,19 @@ end
 
 local function createTextBox(placeholder, yOffset)
 	local box = Instance.new("TextBox")
-	box.Size = UDim2.new(0.9, 0, 0, 35)
+	box.Size = UDim2.new(0.9, 0, 0, 30)
 	box.Position = UDim2.new(0.05, 0, 0, yOffset)
 	box.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 	box.TextColor3 = Color3.fromRGB(255, 255, 255)
 	box.PlaceholderText = placeholder
 	box.PlaceholderColor3 = Color3.fromRGB(100, 100, 110)
 	box.Font = Enum.Font.GothamBold
-	box.TextSize = 12
+	box.TextSize = 11
 	box.Text = ""
 	box.Parent = mainFrame
 	
 	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 8)
+	corner.CornerRadius = UDim.new(0, 6)
 	corner.Parent = box
 	
 	local stroke = Instance.new("UIStroke")
@@ -141,18 +138,21 @@ local function createTextBox(placeholder, yOffset)
 	return box
 end
 
--- Создаем кнопки и поля
-local btnWH, strWH = createModButton("WallHack: ВЫКЛ", 60)
-local btnHitbox, strHitbox = createModButton("Big Hitboxes: ВЫКЛ", 105)
-local btnFly, strFly = createModButton("Fly Mode: ВЫКЛ", 150)
-local btnTpClick, strTpClick = createModButton("Double Tap TP: ВЫКЛ", 195)
-local btnInfJump, strInfJump = createModButton("Inf Jump: ВЫКЛ", 240)
-local btnNoclip, strNoclip = createModButton("Noclip V4 (💯%): ВЫКЛ", 285)
+local btnWH, strWH = createModButton("WallHack: ВЫКЛ", 55)
+local btnHitbox, strHitbox = createModButton("Big Hitboxes: ВЫКЛ", 90)
+local btnFly, strFly = createModButton("Fly Mode: ВЫКЛ", 125)
+local btnTpClick, strTpClick = createModButton("Double Tap TP: ВЫКЛ", 160)
+local btnInfJump, strInfJump = createModButton("Inf Jump: ВЫКЛ", 195)
 
-local inputHitboxSize = createTextBox("Размер Хитбокса (Базово 4)", 335)
-local inputFlySpeed = createTextBox("Скорость Полёта (Базово 50)", 380)
-local inputSpeed = createTextBox("Скорость бега", 425)
-local inputJump = createTextBox("Сила прыжка", 470)
+local btnNoclip1, strNoclip1 = createModButton("Noclip V1 (Classic): ВЫКЛ", 235)
+local btnNoclip2, strNoclip2 = createModButton("Noclip V2 (Matrix): ВЫКЛ", 270)
+local btnNoclip3, strNoclip3 = createModButton("Noclip V3 (Physics): ВЫКЛ", 305)
+local btnNoclip4, strNoclip4 = createModButton("Noclip V4 (Camera): ВЫКЛ", 340)
+
+local inputHitboxSize = createTextBox("Размер Хитбокса (Базово 4)", 385)
+local inputFlySpeed = createTextBox("Скорость Полёта (Базово 50)", 425)
+local inputSpeed = createTextBox("Скорость бега", 465)
+local inputJump = createTextBox("Сила прыжка", 505)
 
 openButton.MouseButton1Click:Connect(function() mainFrame.Visible = not mainFrame.Visible end)
 closeButton.MouseButton1Click:Connect(function() mainFrame.Visible = false end)
@@ -185,7 +185,8 @@ local function toggleColor(btn, stroke, state, textOn, textOff)
 	end
 end
 
-local whEnabled, hitboxEnabled, flyEnabled, tpEnabled, infJumpEnabled, noclipEnabled = false, false, false, false, false, false
+local whEnabled, hitboxEnabled, flyEnabled, tpEnabled, infJumpEnabled = false, false, false, false, false
+local noclip1, noclip2, noclip3, noclip4 = false, false, false, false
 local flySpeed = 50
 local hitboxSize = 4
 
@@ -197,7 +198,6 @@ localPlayer.CharacterAdded:Connect(function(newChar)
 	character = newChar hrp = newChar:WaitForChild("HumanoidRootPart") humanoid = newChar:WaitForChild("Humanoid")
 end)
 
--- 🎯 ВЕЧНЫЕ ХИТБОКСЫ (ПОСТОЯННЫЙ ЦИКЛ ПРОВЕРКИ)
 btnHitbox.MouseButton1Click:Connect(function()
 	hitboxEnabled = not hitboxEnabled
 	toggleColor(btnHitbox, strHitbox, hitboxEnabled, "Big Hitboxes: ВКЛ", "Big Hitboxes: ВЫКЛ")
@@ -208,15 +208,12 @@ inputHitboxSize.FocusLost:Connect(function()
 	if num then hitboxSize = num end
 end)
 
--- Сама магия фикса тут:
 RunService.Heartbeat:Connect(function()
 	if hitboxEnabled then
 		for _, player in ipairs(Players:GetPlayers()) do
 			if player ~= localPlayer and player.Character then
 				local head = player.Character:FindFirstChild("Head")
 				local hum = player.Character:FindFirstChild("Humanoid")
-				
-				-- Проверяем, жив ли игрок и есть ли у него голова
 				if head and hum and hum.Health > 0 then
 					head.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
 					head.Transparency = 0.5
@@ -225,7 +222,6 @@ RunService.Heartbeat:Connect(function()
 			end
 		end
 	else
-		-- Возвращаем всё к стандартным размерам, когда функция выключена
 		for _, player in ipairs(Players:GetPlayers()) do
 			if player ~= localPlayer and player.Character then
 				local head = player.Character:FindFirstChild("Head")
@@ -238,7 +234,6 @@ RunService.Heartbeat:Connect(function()
 	end
 end)
 
--- 🚀 FLY MODE
 btnFly.MouseButton1Click:Connect(function()
 	flyEnabled = not flyEnabled
 	toggleColor(btnFly, strFly, flyEnabled, "Fly Mode: ВКЛ", "Fly Mode: ВЫКЛ")
@@ -278,21 +273,63 @@ inputFlySpeed.FocusLost:Connect(function()
 	if num then flySpeed = num end
 end)
 
--- 🚪 NOCLIP V4
-btnNoclip.MouseButton1Click:Connect(function()
-	noclipEnabled = not noclipEnabled
-	toggleColor(btnNoclip, strNoclip, noclipEnabled, "Noclip V4 (💯%): ВКЛ", "Noclip V4 (💯%): ВЫКЛ")
+btnNoclip1.MouseButton1Click:Connect(function()
+	noclip1 = not noclip1
+	toggleColor(btnNoclip1, strNoclip1, noclip1, "Noclip V1: ВКЛ", "Noclip V1: ВЫКЛ")
 end)
 
-RunService.RenderStepped:Connect(function(deltaTime)
-	if noclipEnabled and character and hrp and humanoid then
+RunService.PreSimulation:Connect(function()
+	if noclip1 and character then
 		for _, part in ipairs(character:GetDescendants()) do
 			if part:IsA("BasePart") then part.CanCollide = false end
 		end
-		
-		local cam = workspace.CurrentCamera
+	end
+end)
+
+btnNoclip2.MouseButton1Click:Connect(function()
+	noclip2 = not noclip2
+	toggleColor(btnNoclip2, strNoclip2, noclip2, "Noclip V2: ВКЛ", "Noclip V2: ВЫКЛ")
+end)
+
+RunService.RenderStepped:Connect(function(deltaTime)
+	if noclip2 and character and hrp and humanoid then
+		for _, part in ipairs(character:GetDescendants()) do
+			if part:IsA("BasePart") then part.CanCollide = false end
+		end
+		if humanoid.MoveDirection.Magnitude > 0 then
+			local speedToUse = humanoid.WalkSpeed
+			hrp.CFrame = hrp.CFrame + (humanoid.MoveDirection * speedToUse * deltaTime)
+		end
+	end
+end)
+
+btnNoclip3.MouseButton1Click:Connect(function()
+	noclip3 = not noclip3
+	toggleColor(btnNoclip3, strNoclip3, noclip3, "Noclip V3: ВКЛ", "Noclip V3: ВЫКЛ")
+end)
+
+RunService.RenderStepped:Connect(function()
+	if noclip3 and character then
+		humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+		for _, part in ipairs(character:GetDescendants()) do
+			if part:IsA("BasePart") then part.CanCollide = false end
+		end
+	elseif not noclip3 and character then
+		if humanoid:GetState() == Enum.HumanoidStateType.Physics then humanoid:ChangeState(Enum.HumanoidStateType.Running) end
+	end
+end)
+
+btnNoclip4.MouseButton1Click:Connect(function()
+	noclip4 = not noclip4
+	toggleColor(btnNoclip4, strNoclip4, noclip4, "Noclip V4: ВКЛ", "Noclip V4: ВЫКЛ")
+end)
+
+RunService.RenderStepped:Connect(function(deltaTime)
+	if noclip4 and character and hrp and humanoid then
+		for _, part in ipairs(character:GetDescendants()) do
+			if part:IsA("BasePart") then part.CanCollide = false end
+		end
 		local moveDir = humanoid.MoveDirection
-		
 		if moveDir.Magnitude > 0 then
 			hrp.CFrame = hrp.CFrame + (moveDir * 35 * deltaTime)
 		end
@@ -300,7 +337,6 @@ RunService.RenderStepped:Connect(function(deltaTime)
 	end
 end)
 
--- Double Tap TP
 local lastClickTime = 0
 btnTpClick.MouseButton1Click:Connect(function()
 	tpEnabled = not tpEnabled
@@ -325,7 +361,6 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	end
 end)
 
--- Inf Jump
 btnInfJump.MouseButton1Click:Connect(function()
 	infJumpEnabled = not infJumpEnabled
 	toggleColor(btnInfJump, strInfJump, infJumpEnabled, "Inf Jump: ВКЛ", "Inf Jump: ВЫКЛ")
@@ -335,7 +370,6 @@ UserInputService.JumpRequest:Connect(function()
 	if infJumpEnabled and humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
 end)
 
--- WH
 task.spawn(function()
 	while true do
 		if whEnabled then
@@ -361,7 +395,6 @@ btnWH.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Скорость и прыжки
 inputSpeed.FocusLost:Connect(function()
 	if humanoid then
 		local num = tonumber(inputSpeed.Text)
