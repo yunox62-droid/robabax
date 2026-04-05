@@ -4,7 +4,7 @@ local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TrueModMenu_V9"
+screenGui.Name = "TrueModMenu_V10"
 screenGui.ResetOnSpawn = false
 
 pcall(function()
@@ -90,14 +90,14 @@ local function createTextBox(placeholder, yOffset)
 end
 
 local btnWH = createModButton("WallHack: ВЫКЛ", 50)
-local btnGod = createModButton("God Mode: ВЫКЛ", 90)
+local btnGod = createModButton("God Mode (Hard): ВЫКЛ", 90)
 local btnInfJump = createModButton("Inf Jump: ВЫКЛ", 130)
 local btnNoclip = createModButton("Noclip: ВЫКЛ", 170)
 local btnBoost = createModButton("Boost Up 🚀", 210)
 btnBoost.BackgroundColor3 = Color3.fromRGB(50, 150, 250)
 
-local inputSpeed = createTextBox("Введите скорость (По умолчанию 16)", 260)
-local inputJump = createTextBox("Введите силу прыжка (По умолчанию 50)", 310)
+local inputSpeed = createTextBox("Введите скорость", 260)
+local inputJump = createTextBox("Введите силу прыжка", 310)
 
 openButton.MouseButton1Click:Connect(function() mainFrame.Visible = not mainFrame.Visible end)
 closeButton.MouseButton1Click:Connect(function() mainFrame.Visible = false end)
@@ -132,9 +132,41 @@ localPlayer.CharacterAdded:Connect(function(newChar)
 	character = newChar hrp = newChar:WaitForChild("HumanoidRootPart") humanoid = newChar:WaitForChild("Humanoid")
 	if noclipEnabled then noclipEnabled = false; toggleColor(btnNoclip, false, "Noclip: ВКЛ", "Noclip: ВЫКЛ") end
 	if infJumpEnabled then infJumpEnabled = false; toggleColor(btnInfJump, false, "Inf Jump: ВКЛ", "Inf Jump: ВЫКЛ") end
-	if godEnabled then godEnabled = false; toggleColor(btnGod, false, "God Mode: ВКЛ", "God Mode: ВЫКЛ") end
+	if godEnabled then godEnabled = false; toggleColor(btnGod, false, "God Mode (Hard): ВКЛ", "God Mode (Hard): ВЫКЛ") end
 end)
 
+-- ЖЕСТКИЙ GOD MODE
+btnGod.MouseButton1Click:Connect(function()
+	if not character or not humanoid then return end
+	godEnabled = not godEnabled
+	toggleColor(btnGod, godEnabled, "God Mode (Hard): ВКЛ", "God Mode (Hard): ВЫКЛ")
+	
+	if godEnabled then
+		-- Ломаем скрипт урона внутри персонажа
+		pcall(function()
+			local scr = character:FindFirstChild("Health") or character:FindFirstChild("HealthScript")
+			if scr then scr.Disabled = true end
+		end)
+		
+		-- Замораживаем состояния смерти
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+		
+		-- Бесконечный цикл удержания ХП на клиенте
+		task.spawn(function()
+			while godEnabled do
+				if humanoid then
+					humanoid.Health = humanoid.MaxHealth
+				end
+				task.wait()
+			end
+		end)
+	else
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
+		-- Чтобы выключить его, персонажа придется перезаспавнить (сброситься)
+	end
+end)
+
+-- WallHack
 local function updateWH()
 	if not whEnabled then return end
 	for _, player in ipairs(Players:GetPlayers()) do
@@ -167,57 +199,30 @@ btnWH.MouseButton1Click:Connect(function()
 		table.clear(highlights)
 	end
 end)
-
-task.spawn(function()
-	while true do pcall(updateWH) task.wait(0.5) end
-end)
-
--- God Mode
-btnGod.MouseButton1Click:Connect(function()
-	if not humanoid then return end
-	godEnabled = not godEnabled
-	toggleColor(btnGod, godEnabled, "God Mode: ВКЛ", "God Mode: ВЫКЛ")
-end)
-
-RunService.RenderStepped:Connect(function()
-	if godEnabled and humanoid then
-		humanoid.Health = humanoid.MaxHealth
-		if humanoid:GetState() == Enum.HumanoidStateType.Dead then
-			humanoid:ChangeState(Enum.HumanoidStateType.Running)
-			humanoid.Health = humanoid.MaxHealth
-		end
-	end
-end)
+task.spawn(function() while true do pcall(updateWH) task.wait(0.5) end end)
 
 -- Inf Jump
 btnInfJump.MouseButton1Click:Connect(function()
 	infJumpEnabled = not infJumpEnabled
 	toggleColor(btnInfJump, infJumpEnabled, "Inf Jump: ВКЛ", "Inf Jump: ВЫКЛ")
 end)
-
 UserInputService.JumpRequest:Connect(function()
-	if infJumpEnabled and humanoid then
-		humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-	end
+	if infJumpEnabled and humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
 end)
 
 btnBoost.MouseButton1Click:Connect(function()
 	if hrp then hrp.AssemblyLinearVelocity = Vector3.new(0, 100, 0) end
 end)
 
--- УСИЛЕННЫЙ NOCLIP
+-- Noclip
 btnNoclip.MouseButton1Click:Connect(function()
 	noclipEnabled = not noclipEnabled
 	toggleColor(btnNoclip, noclipEnabled, "Noclip: ВКЛ", "Noclip: ВЫКЛ")
 end)
-
 RunService.PreSimulation:Connect(function()
 	if noclipEnabled and character then
-		-- Цикл по абсолютно всем деталям персонажа, включая шляпы и оружие
 		for _, part in ipairs(character:GetDescendants()) do
-			if part:IsA("BasePart") then
-				part.CanCollide = false
-			end
+			if part:IsA("BasePart") then part.CanCollide = false end
 		end
 	end
 end)
@@ -228,13 +233,9 @@ inputSpeed.FocusLost:Connect(function()
 		if num then humanoid.WalkSpeed = num end
 	end
 end)
-
 inputJump.FocusLost:Connect(function()
 	if humanoid then
 		local num = tonumber(inputJump.Text)
-		if num then
-			humanoid.UseJumpPower = true
-			humanoid.JumpPower = num
-		end
+		if num then humanoid.UseJumpPower = true humanoid.JumpPower = num end
 	end
 end)
