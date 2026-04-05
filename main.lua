@@ -38,8 +38,8 @@ uiCornerObj.CornerRadius = UDim.new(0, 10)
 uiCornerObj.Parent = openButton
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 250, 0, 300)
-mainFrame.Position = UDim2.new(0.5, -125, 0.5, -150)
+mainFrame.Size = UDim2.new(0, 250, 0, 420)
+mainFrame.Position = UDim2.new(0.5, -125, 0.5, -210)
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.Visible = false
 mainFrame.Parent = screenGui
@@ -59,13 +59,13 @@ titleLabel.Parent = mainFrame
 
 local function createModButton(text, yOffset)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0.9, 0, 0, 40)
+	btn.Size = UDim2.new(0.9, 0, 0, 35)
 	btn.Position = UDim2.new(0.05, 0, 0, yOffset)
 	btn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	btn.Text = text
 	btn.Font = Enum.Font.SourceSansBold
-	btn.TextSize = 16
+	btn.TextSize = 14
 	btn.Parent = mainFrame
 	
 	local corner = Instance.new("UICorner")
@@ -74,13 +74,36 @@ local function createModButton(text, yOffset)
 	return btn
 end
 
+local function createTextBox(placeholder, yOffset)
+	local box = Instance.new("TextBox")
+	box.Size = UDim2.new(0.9, 0, 0, 35)
+	box.Position = UDim2.new(0.05, 0, 0, yOffset)
+	box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	box.TextColor3 = Color3.fromRGB(255, 255, 255)
+	box.PlaceholderText = placeholder
+	box.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+	box.Font = Enum.Font.SourceSansBold
+	box.TextSize = 14
+	box.Text = ""
+	box.Parent = mainFrame
+	
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = box
+	return box
+end
+
 local btnWH = createModButton("WallHack: ВЫКЛ", 50)
-local btnGod = createModButton("Immortality: ВЫКЛ", 100)
-local btnFly = createModButton("Fly: ВЫКЛ", 150)
-local btnBoost = createModButton("Boost Up 🚀", 200)
+local btnGod = createModButton("Immortality: ВЫКЛ", 90)
+local btnFly = createModButton("Fly: ВЫКЛ", 130)
+local btnNoclip = createModButton("Noclip: ВЫКЛ", 170)
+local btnBoost = createModButton("Boost Up 🚀", 210)
 btnBoost.BackgroundColor3 = Color3.fromRGB(50, 150, 250)
 
-log("Buttons created")
+local inputSpeed = createTextBox("Введите скорость (По умолчанию 16)", 260)
+local inputJump = createTextBox("Введите силу прыжка (По умолчанию 50)", 310)
+
+log("Buttons and inputs created")
 
 openButton.MouseButton1Click:Connect(function()
 	mainFrame.Visible = not mainFrame.Visible
@@ -100,6 +123,7 @@ end
 local whEnabled = false
 local godEnabled = false
 local flyEnabled = false
+local noclipEnabled = false
 
 local whRadius = 150
 local highlights = {}
@@ -134,6 +158,11 @@ localPlayer.CharacterAdded:Connect(function(newChar)
 	
 	if hrp then hrp.Anchored = false end
 	if humanoid then humanoid.PlatformStand = false end
+	
+	if noclipEnabled then
+		noclipEnabled = false
+		toggleColor(btnNoclip, false, "Noclip: ВКЛ", "Noclip: ВЫКЛ")
+	end
 end)
 
 local function updateWH()
@@ -276,6 +305,50 @@ btnBoost.MouseButton1Click:Connect(function()
 		log("Boost applied")
 	else
 		log("Boost failed: HRP missing")
+	end
+end)
+
+btnNoclip.MouseButton1Click:Connect(function()
+	noclipEnabled = not noclipEnabled
+	toggleColor(btnNoclip, noclipEnabled, "Noclip: ВКЛ", "Noclip: ВЫКЛ")
+	log("Noclip toggle: " .. tostring(noclipEnabled))
+end)
+
+task.spawn(function()
+	while true do
+		if noclipEnabled and character then
+			for _, part in ipairs(character:GetChildren()) do
+				if part:IsA("BasePart") and part.Name ~= "LeftLeg" and part.Name ~= "RightLeg" and part.Name ~= "Left Foot" and part.Name ~= "Right Foot" then
+					part.CanCollide = false
+				end
+			end
+		end
+		task.wait(0.1)
+	end
+end)
+
+inputSpeed.FocusLost:Connect(function(enterPressed)
+	if humanoid then
+		local num = tonumber(inputSpeed.Text)
+		if num then
+			humanoid.WalkSpeed = num
+			log("WalkSpeed set to: " .. num)
+		else
+			log("Invalid Speed input")
+		end
+	end
+end)
+
+inputJump.FocusLost:Connect(function(enterPressed)
+	if humanoid then
+		local num = tonumber(inputJump.Text)
+		if num then
+			humanoid.UseJumpPower = true
+			humanoid.JumpPower = num
+			log("JumpPower set to: " .. num)
+		else
+			log("Invalid Jump input")
+		end
 	end
 end)
 
