@@ -4,7 +4,7 @@ local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TrueModMenu_V4"
+screenGui.Name = "TrueModMenu_V5"
 screenGui.ResetOnSpawn = false
 
 pcall(function()
@@ -91,7 +91,7 @@ end
 
 local btnWH = createModButton("WallHack: ВЫКЛ", 50)
 local btnGod = createModButton("Immortality: ВЫКЛ", 90)
-local btnFly = createModButton("Fly: ВЫКЛ", 130)
+local btnFly = createModButton("Fly (CFrame): ВЫКЛ", 130)
 local btnNoclip = createModButton("Noclip: ВЫКЛ", 170)
 local btnBoost = createModButton("Boost Up 🚀", 210)
 btnBoost.BackgroundColor3 = Color3.fromRGB(50, 150, 250)
@@ -99,29 +99,16 @@ btnBoost.BackgroundColor3 = Color3.fromRGB(50, 150, 250)
 local inputSpeed = createTextBox("Введите скорость (По умолчанию 16)", 260)
 local inputJump = createTextBox("Введите силу прыжка (По умолчанию 50)", 310)
 
-openButton.MouseButton1Click:Connect(function()
-	mainFrame.Visible = not mainFrame.Visible
-end)
+openButton.MouseButton1Click:Connect(function() mainFrame.Visible = not mainFrame.Visible end)
+closeButton.MouseButton1Click:Connect(function() mainFrame.Visible = false end)
 
-closeButton.MouseButton1Click:Connect(function()
-	mainFrame.Visible = false
-end)
-
-local dragging = false
-local dragStart = nil
-local startPos = nil
-
+local dragging, dragStart, startPos
 titleLabel.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = true
-		dragStart = input.Position
-		startPos = mainFrame.Position
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then dragging = false end
-		end)
+		dragging = true dragStart = input.Position startPos = mainFrame.Position
+		input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
 	end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
 	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 		local delta = input.Position - dragStart
@@ -130,36 +117,22 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 local function toggleColor(btn, state, textOn, textOff)
-	if state then
-		btn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-		btn.Text = textOn
-	else
-		btn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-		btn.Text = textOff
-	end
+	if state then btn.BackgroundColor3 = Color3.fromRGB(50, 200, 50) btn.Text = textOn
+	else btn.BackgroundColor3 = Color3.fromRGB(200, 50, 50) btn.Text = textOff end
 end
 
-local whEnabled = false
-local godEnabled = false
-local flyEnabled = false
-local noclipEnabled = false
-
-local whRadius = 150
+local whEnabled, godEnabled, flyEnabled, noclipEnabled = false, false, false, false
+local flySpeed, flyUp, flyDown = 50, false, false
 local highlights = {}
-local flySpeed = 50
-local flyUp = false
-local flyDown = false
 
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
 local humanoid = character:WaitForChild("Humanoid")
 
 localPlayer.CharacterAdded:Connect(function(newChar)
-	character = newChar
-	hrp = newChar:WaitForChild("HumanoidRootPart")
-	humanoid = newChar:WaitForChild("Humanoid")
+	character = newChar hrp = newChar:WaitForChild("HumanoidRootPart") humanoid = newChar:WaitForChild("Humanoid")
 	if noclipEnabled then noclipEnabled = false; toggleColor(btnNoclip, false, "Noclip: ВКЛ", "Noclip: ВЫКЛ") end
-	if flyEnabled then flyEnabled = false; toggleColor(btnFly, false, "Fly: ВКЛ", "Fly: ВЫКЛ") end
+	if flyEnabled then flyEnabled = false; toggleColor(btnFly, false, "Fly (CFrame): ВКЛ", "Fly (CFrame): ВЫКЛ") end
 	if godEnabled then godEnabled = false; toggleColor(btnGod, false, "Immortality: ВКЛ", "Immortality: ВЫКЛ") end
 end)
 
@@ -170,7 +143,7 @@ local function updateWH()
 		local char = player.Character
 		if char and char:FindFirstChild("HumanoidRootPart") and hrp then
 			local dist = (char.HumanoidRootPart.Position - hrp.Position).Magnitude
-			if dist <= whRadius then
+			if dist <= 150 then
 				if not highlights[player] or highlights[player].Parent ~= char then
 					pcall(function()
 						local hl = Instance.new("Highlight")
@@ -197,10 +170,7 @@ btnWH.MouseButton1Click:Connect(function()
 end)
 
 task.spawn(function()
-	while true do 
-		pcall(updateWH)
-		task.wait(0.5) 
-	end
+	while true do pcall(updateWH) task.wait(0.5) end
 end)
 
 local godConnection = nil
@@ -223,27 +193,9 @@ end)
 
 local upBtn = Instance.new("TextButton")
 local downBtn = Instance.new("TextButton")
-
-upBtn.Size = UDim2.new(0, 40, 0, 40)
-upBtn.Position = UDim2.new(1, -50, 0.5, -45)
-upBtn.BackgroundColor3 = Color3.fromRGB(35,35,35)
-upBtn.TextColor3 = Color3.fromRGB(255,255,255)
-upBtn.Text = "▲"
-upBtn.Font = Enum.Font.SourceSansBold
-upBtn.TextSize = 20
-upBtn.Visible = false
-upBtn.Parent = screenGui
+upBtn.Size = UDim2.new(0, 40, 0, 40) upBtn.Position = UDim2.new(1, -50, 0.5, -45) upBtn.BackgroundColor3 = Color3.fromRGB(35,35,35) upBtn.TextColor3 = Color3.fromRGB(255,255,255) upBtn.Text = "▲" upBtn.Font = Enum.Font.SourceSansBold upBtn.TextSize = 20 upBtn.Visible = false upBtn.Parent = screenGui
 local c1 = Instance.new("UICorner") c1.CornerRadius = UDim.new(0, 8) c1.Parent = upBtn
-
-downBtn.Size = UDim2.new(0, 40, 0, 40)
-downBtn.Position = UDim2.new(1, -50, 0.5, 5)
-downBtn.BackgroundColor3 = Color3.fromRGB(35,35,35)
-downBtn.TextColor3 = Color3.fromRGB(255,255,255)
-downBtn.Text = "▼"
-downBtn.Font = Enum.Font.SourceSansBold
-downBtn.TextSize = 20
-downBtn.Visible = false
-downBtn.Parent = screenGui
+downBtn.Size = UDim2.new(0, 40, 0, 40) downBtn.Position = UDim2.new(1, -50, 0.5, 5) downBtn.BackgroundColor3 = Color3.fromRGB(35,35,35) downBtn.TextColor3 = Color3.fromRGB(255,255,255) downBtn.Text = "▼" downBtn.Font = Enum.Font.SourceSansBold downBtn.TextSize = 20 downBtn.Visible = false downBtn.Parent = screenGui
 local c2 = Instance.new("UICorner") c2.CornerRadius = UDim.new(0, 8) c2.Parent = downBtn
 
 upBtn.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then flyUp = true end end)
@@ -251,46 +203,34 @@ upBtn.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInpu
 downBtn.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then flyDown = true end end)
 downBtn.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then flyDown = false end end)
 
-local bv, bg
 btnFly.MouseButton1Click:Connect(function()
 	if not hrp then return end
 	flyEnabled = not flyEnabled
-	toggleColor(btnFly, flyEnabled, "Fly: ВКЛ", "Fly: ВЫКЛ")
-	
+	toggleColor(btnFly, flyEnabled, "Fly (CFrame): ВКЛ", "Fly (CFrame): ВЫКЛ")
 	upBtn.Visible = flyEnabled
 	downBtn.Visible = flyEnabled
 	
 	if flyEnabled then
-		bv = Instance.new("BodyVelocity")
-		bv.MaxForce = Vector3.new(1e6, 1e6, 1e6)
-		bv.Velocity = Vector3.new(0,0,0)
-		bv.Parent = hrp
-		
-		bg = Instance.new("BodyGyro")
-		bg.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
-		bg.CFrame = hrp.CFrame
-		bg.Parent = hrp
-		
 		humanoid.PlatformStand = true
 	else
-		if bv then bv:Destroy() end
-		if bg then bg:Destroy() end
 		humanoid.PlatformStand = false
+		hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 	end
 end)
 
-RunService.RenderStepped:Connect(function()
-	if flyEnabled and hrp and bv and bg then
+RunService.RenderStepped:Connect(function(deltaTime)
+	if flyEnabled and hrp then
 		local cam = workspace.CurrentCamera
 		local moveDirection = humanoid.MoveDirection
-		bg.CFrame = cam.CFrame
 		
-		local velocity = moveDirection * flySpeed
-		local verticalSpeed = 0
-		if flyUp then verticalSpeed = flySpeed end
-		if flyDown then verticalSpeed = -flySpeed end
+		local velocity = moveDirection * flySpeed * deltaTime
+		local upVector = Vector3.new(0, 0, 0)
 		
-		bv.Velocity = Vector3.new(velocity.X, verticalSpeed, velocity.Z)
+		if flyUp then upVector = Vector3.new(0, flySpeed * deltaTime, 0) end
+		if flyDown then upVector = Vector3.new(0, -flySpeed * deltaTime, 0) end
+		
+		hrp.CFrame = hrp.CFrame + Vector3.new(velocity.X, 0, velocity.Z) + upVector
+		hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 	end
 end)
 
@@ -303,9 +243,9 @@ btnNoclip.MouseButton1Click:Connect(function()
 	toggleColor(btnNoclip, noclipEnabled, "Noclip: ВКЛ", "Noclip: ВЫКЛ")
 end)
 
-RunService.RenderStepped:Connect(function()
+RunService.Stepped:Connect(function()
 	if noclipEnabled and character then
-		for _, part in ipairs(character:GetDescendants()) do
+		for _, part in ipairs(character:GetChildren()) do
 			if part:IsA("BasePart") then
 				part.CanCollide = false
 			end
