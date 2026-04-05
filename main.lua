@@ -4,7 +4,7 @@ local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TrueModMenu_V7"
+screenGui.Name = "TrueModMenu_V8"
 screenGui.ResetOnSpawn = false
 
 pcall(function()
@@ -90,7 +90,7 @@ local function createTextBox(placeholder, yOffset)
 end
 
 local btnWH = createModButton("WallHack: ВЫКЛ", 50)
-local btnGod = createModButton("Invis Godmode: ВЫКЛ", 90)
+local btnGod = createModButton("God Mode: ВЫКЛ", 90)
 local btnInfJump = createModButton("Inf Jump: ВЫКЛ", 130)
 local btnNoclip = createModButton("Noclip: ВЫКЛ", 170)
 local btnBoost = createModButton("Boost Up 🚀", 210)
@@ -132,7 +132,7 @@ localPlayer.CharacterAdded:Connect(function(newChar)
 	character = newChar hrp = newChar:WaitForChild("HumanoidRootPart") humanoid = newChar:WaitForChild("Humanoid")
 	if noclipEnabled then noclipEnabled = false; toggleColor(btnNoclip, false, "Noclip: ВКЛ", "Noclip: ВЫКЛ") end
 	if infJumpEnabled then infJumpEnabled = false; toggleColor(btnInfJump, false, "Inf Jump: ВКЛ", "Inf Jump: ВЫКЛ") end
-	if godEnabled then godEnabled = false; toggleColor(btnGod, false, "Invis Godmode: ВКЛ", "Invis Godmode: ВЫКЛ") end
+	if godEnabled then godEnabled = false; toggleColor(btnGod, false, "God Mode: ВКЛ", "God Mode: ВЫКЛ") end
 end)
 
 local function updateWH()
@@ -172,63 +172,21 @@ task.spawn(function()
 	while true do pcall(updateWH) task.wait(0.5) end
 end)
 
--- Невидимка (Invis Godmode)
-local invisRunning = false
+-- Новый рабочий God Mode без потери взаимодействия
 btnGod.MouseButton1Click:Connect(function()
-	if not character or not hrp then return end
+	if not humanoid then return end
 	godEnabled = not godEnabled
-	toggleColor(btnGod, godEnabled, "Invis Godmode: ВКЛ", "Invis Godmode: ВЫКЛ")
-	
-	if godEnabled then
-		invisRunning = true
-		local cam = workspace.CurrentCamera
-		local origPos = hrp.Position
-		
-		task.spawn(function()
-			while invisRunning do
-				if hrp then
-					hrp.CFrame = CFrame.new(origPos.X, -500, origPos.Z)
-					hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-				end
-				task.wait(0.1)
-			end
-		end)
-		
-		local fakeChar = Instance.new("Part")
-		fakeChar.Size = Vector3.new(2, 4, 1)
-		fakeChar.CFrame = CFrame.new(origPos)
-		fakeChar.Transparency = 0.5
-		fakeChar.Color = Color3.fromRGB(0, 255, 0)
-		fakeChar.CanCollide = true
-		fakeChar.Anchored = false
-		fakeChar.Parent = workspace
-		
-		local bv = Instance.new("BodyVelocity", fakeChar)
-		bv.MaxForce = Vector3.new(1e6, 1e6, 1e6)
-		bv.Velocity = Vector3.new(0,0,0)
-		
-		cam.CameraSubject = fakeChar
-		
-		task.spawn(function()
-			while invisRunning do
-				local moveDirection = humanoid.MoveDirection
-				bv.Velocity = moveDirection * humanoid.WalkSpeed
-				task.wait()
-			end
-		end)
-		
-		_G.FakeCharacter = fakeChar
-	else
-		invisRunning = false
-		local cam = workspace.CurrentCamera
-		cam.CameraSubject = humanoid
-		
-		if _G.FakeCharacter then
-			_G.FakeCharacter:Destroy()
-			_G.FakeCharacter = nil
+	toggleColor(btnGod, godEnabled, "God Mode: ВКЛ", "God Mode: ВЫКЛ")
+end)
+
+-- Кадровая блокировка смерти и пополнение ХП
+RunService.RenderStepped:Connect(function()
+	if godEnabled and humanoid then
+		humanoid.Health = humanoid.MaxHealth
+		if humanoid:GetState() == Enum.HumanoidStateType.Dead then
+			humanoid:ChangeState(Enum.HumanoidStateType.Running)
+			humanoid.Health = humanoid.MaxHealth
 		end
-		
-		hrp.CFrame = CFrame.new(hrp.Position.X, 10, hrp.Position.Z)
 	end
 end)
 
