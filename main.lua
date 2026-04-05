@@ -4,15 +4,15 @@ local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
 -- Защита от дублирования интерфейса
-if game:GetService("CoreGui"):FindFirstChild("TruePremiumMenu") then
-	game:GetService("CoreGui").TruePremiumMenu:Destroy()
+if game:GetService("CoreGui"):FindFirstChild("TruePremiumMenu_V15") then
+	game:GetService("CoreGui").TruePremiumMenu_V15:Destroy()
 end
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TruePremiumMenu"
+screenGui.Name = "TruePremiumMenu_V15"
 screenGui.ResetOnSpawn = false
 pcall(function()
-	screenGui.Parent = game:GetService("CoreGui") -- Пытаемся засунуть в CoreGui, чтобы админы не видели в PlayerGui
+	screenGui.Parent = game:GetService("CoreGui")
 end)
 if not screenGui.Parent then
 	screenGui.Parent = localPlayer:WaitForChild("PlayerGui")
@@ -30,7 +30,7 @@ openButton.TextSize = 22
 openButton.Parent = screenGui
 
 local btnCorner = Instance.new("UICorner")
-btnCorner.CornerRadius = UDim.new(0, 25) -- Круглая
+btnCorner.CornerRadius = UDim.new(0, 25)
 btnCorner.Parent = openButton
 
 local btnStroke = Instance.new("UIStroke")
@@ -38,7 +38,6 @@ btnStroke.Color = Color3.fromRGB(0, 255, 150)
 btnStroke.Thickness = 2
 btnStroke.Parent = openButton
 
--- Логика перетаскивания иконки (для мобилок и ПК)
 local iconDragging, iconDragStart, iconStartPos
 openButton.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -59,8 +58,8 @@ end)
 
 -- ================= КРАСИВОЕ ОСНОВНОЕ МЕНЮ =================
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 260, 0, 480)
-mainFrame.Position = UDim2.new(0.5, -130, 0.5, -240)
+mainFrame.Size = UDim2.new(0, 260, 0, 520) -- Увеличил высоту для нового поля
+mainFrame.Position = UDim2.new(0.5, -130, 0.5, -260)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.Visible = false
 mainFrame.ClipsDescendants = true
@@ -79,9 +78,9 @@ local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, 0, 0, 45)
 titleLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.Text = "PREMIUM MENU"
+titleLabel.Text = "PREMIUM MENU V15"
 titleLabel.Font = Enum.Font.GothamBold
-titleLabel.TextSize = 16
+titleLabel.TextSize = 14
 titleLabel.Parent = mainFrame
 
 local closeButton = Instance.new("TextButton")
@@ -148,17 +147,16 @@ local btnHitbox, strHitbox = createModButton("Big Hitboxes: ВЫКЛ", 105)
 local btnFly, strFly = createModButton("Fly Mode: ВЫКЛ", 150)
 local btnTpClick, strTpClick = createModButton("Double Tap TP: ВЫКЛ", 195)
 local btnInfJump, strInfJump = createModButton("Inf Jump: ВЫКЛ", 240)
-local btnNoclip, strNoclip = createModButton("Noclip V3: ВЫКЛ", 285)
+local btnNoclip, strNoclip = createModButton("Noclip V4 (💯%): ВЫКЛ", 285)
 
-local inputFlySpeed = createTextBox("Скорость Полёта (Базово 50)", 335)
-local inputSpeed = createTextBox("Скорость бега", 380)
-local inputJump = createTextBox("Сила прыжка", 425)
+local inputHitboxSize = createTextBox("Размер Хитбокса (Базово 4)", 335)
+local inputFlySpeed = createTextBox("Скорость Полёта (Базово 50)", 380)
+local inputSpeed = createTextBox("Скорость бега", 425)
+local inputJump = createTextBox("Сила прыжка", 470)
 
--- Открытие/Закрытие по нажатию на значок
 openButton.MouseButton1Click:Connect(function() mainFrame.Visible = not mainFrame.Visible end)
 closeButton.MouseButton1Click:Connect(function() mainFrame.Visible = false end)
 
--- Перетаскивание основного меню
 local dragging, dragStart, startPos
 titleLabel.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -189,6 +187,7 @@ end
 
 local whEnabled, hitboxEnabled, flyEnabled, tpEnabled, infJumpEnabled, noclipEnabled = false, false, false, false, false, false
 local flySpeed = 50
+local hitboxSize = 4
 
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
@@ -198,10 +197,15 @@ localPlayer.CharacterAdded:Connect(function(newChar)
 	character = newChar hrp = newChar:WaitForChild("HumanoidRootPart") humanoid = newChar:WaitForChild("Humanoid")
 end)
 
--- 🎯 HITBOXES (Большие головы)
+-- 🎯 HITBOXES С РЕГУЛИРОВКОЙ РАЗМЕРА
 btnHitbox.MouseButton1Click:Connect(function()
 	hitboxEnabled = not hitboxEnabled
 	toggleColor(btnHitbox, strHitbox, hitboxEnabled, "Big Hitboxes: ВКЛ", "Big Hitboxes: ВЫКЛ")
+end)
+
+inputHitboxSize.FocusLost:Connect(function()
+	local num = tonumber(inputHitboxSize.Text)
+	if num then hitboxSize = num end
 end)
 
 task.spawn(function()
@@ -210,8 +214,8 @@ task.spawn(function()
 			for _, player in ipairs(Players:GetPlayers()) do
 				if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") then
 					local head = player.Character.Head
-					head.Size = Vector3.new(4, 4, 4) -- Увеличиваем в 4 раза
-					head.Transparency = 0.5 -- Делаем полупрозрачными, чтобы видеть куда стрелять
+					head.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+					head.Transparency = 0.5
 					head.CanCollide = false
 				end
 			end
@@ -219,7 +223,7 @@ task.spawn(function()
 			for _, player in ipairs(Players:GetPlayers()) do
 				if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") then
 					local head = player.Character.Head
-					head.Size = Vector3.new(2, 1, 1) -- Возвращаем стандарт
+					head.Size = Vector3.new(2, 1, 1)
 					head.Transparency = 0
 				end
 			end
@@ -228,7 +232,7 @@ task.spawn(function()
 	end
 end)
 
--- 🚀 FLY MODE СО СКОРОСТЬЮ
+-- 🚀 FLY MODE
 btnFly.MouseButton1Click:Connect(function()
 	flyEnabled = not flyEnabled
 	toggleColor(btnFly, strFly, flyEnabled, "Fly Mode: ВКЛ", "Fly Mode: ВЫКЛ")
@@ -254,7 +258,6 @@ btnFly.MouseButton1Click:Connect(function()
 				else
 					bv.Velocity = Vector3.new(0, 0, 0)
 				end
-				
 				bg.CFrame = cam.CFrame
 				task.wait()
 			end
@@ -267,6 +270,32 @@ end)
 inputFlySpeed.FocusLost:Connect(function()
 	local num = tonumber(inputFlySpeed.Text)
 	if num then flySpeed = num end
+end)
+
+-- 🚪 100% РАБОЧИЙ NOCLIP V4 (ЧЕРЕЗ КАМЕРУ)
+btnNoclip.MouseButton1Click:Connect(function()
+	noclipEnabled = not noclipEnabled
+	toggleColor(btnNoclip, strNoclip, noclipEnabled, "Noclip V4 (💯%): ВКЛ", "Noclip V4 (💯%): ВЫКЛ")
+end)
+
+RunService.RenderStepped:Connect(function(deltaTime)
+	if noclipEnabled and character and hrp and humanoid then
+		-- Отключаем коллизии, чтобы не дергало в дверях
+		for _, part in ipairs(character:GetDescendants()) do
+			if part:IsA("BasePart") then part.CanCollide = false end
+		end
+		
+		local cam = workspace.CurrentCamera
+		local moveDir = humanoid.MoveDirection
+		
+		-- Движение строго сквозь физику по направлению камеры
+		if moveDir.Magnitude > 0 then
+			hrp.CFrame = hrp.CFrame + (moveDir * 35 * deltaTime)
+		end
+		
+		-- Обнуляем падение под карту
+		hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+	end
 end)
 
 -- Double Tap TP
@@ -302,23 +331,6 @@ end)
 
 UserInputService.JumpRequest:Connect(function()
 	if infJumpEnabled and humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
-end)
-
--- Noclip V3
-btnNoclip.MouseButton1Click:Connect(function()
-	noclipEnabled = not noclipEnabled
-	toggleColor(btnNoclip, strNoclip, noclipEnabled, "Noclip V3: ВКЛ", "Noclip V3: ВЫКЛ")
-end)
-
-RunService.RenderStepped:Connect(function()
-	if noclipEnabled and character then
-		humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-		for _, part in ipairs(character:GetDescendants()) do
-			if part:IsA("BasePart") then part.CanCollide = false end
-		end
-	elseif not noclipEnabled and character then
-		if humanoid:GetState() == Enum.HumanoidStateType.Physics then humanoid:ChangeState(Enum.HumanoidStateType.Running) end
-	end
 end)
 
 -- WH
