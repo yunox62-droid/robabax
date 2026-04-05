@@ -4,7 +4,7 @@ local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TrueModMenu_V5"
+screenGui.Name = "TrueModMenu_V7"
 screenGui.ResetOnSpawn = false
 
 pcall(function()
@@ -90,8 +90,8 @@ local function createTextBox(placeholder, yOffset)
 end
 
 local btnWH = createModButton("WallHack: ВЫКЛ", 50)
-local btnGod = createModButton("Immortality: ВЫКЛ", 90)
-local btnFly = createModButton("Fly (CFrame): ВЫКЛ", 130)
+local btnGod = createModButton("Invis Godmode: ВЫКЛ", 90)
+local btnInfJump = createModButton("Inf Jump: ВЫКЛ", 130)
 local btnNoclip = createModButton("Noclip: ВЫКЛ", 170)
 local btnBoost = createModButton("Boost Up 🚀", 210)
 btnBoost.BackgroundColor3 = Color3.fromRGB(50, 150, 250)
@@ -121,8 +121,7 @@ local function toggleColor(btn, state, textOn, textOff)
 	else btn.BackgroundColor3 = Color3.fromRGB(200, 50, 50) btn.Text = textOff end
 end
 
-local whEnabled, godEnabled, flyEnabled, noclipEnabled = false, false, false, false
-local flySpeed, flyUp, flyDown = 50, false, false
+local whEnabled, godEnabled, infJumpEnabled, noclipEnabled = false, false, false, false
 local highlights = {}
 
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
@@ -132,8 +131,8 @@ local humanoid = character:WaitForChild("Humanoid")
 localPlayer.CharacterAdded:Connect(function(newChar)
 	character = newChar hrp = newChar:WaitForChild("HumanoidRootPart") humanoid = newChar:WaitForChild("Humanoid")
 	if noclipEnabled then noclipEnabled = false; toggleColor(btnNoclip, false, "Noclip: ВКЛ", "Noclip: ВЫКЛ") end
-	if flyEnabled then flyEnabled = false; toggleColor(btnFly, false, "Fly (CFrame): ВКЛ", "Fly (CFrame): ВЫКЛ") end
-	if godEnabled then godEnabled = false; toggleColor(btnGod, false, "Immortality: ВКЛ", "Immortality: ВЫКЛ") end
+	if infJumpEnabled then infJumpEnabled = false; toggleColor(btnInfJump, false, "Inf Jump: ВКЛ", "Inf Jump: ВЫКЛ") end
+	if godEnabled then godEnabled = false; toggleColor(btnGod, false, "Invis Godmode: ВКЛ", "Invis Godmode: ВЫКЛ") end
 end)
 
 local function updateWH()
@@ -173,64 +172,75 @@ task.spawn(function()
 	while true do pcall(updateWH) task.wait(0.5) end
 end)
 
-local godConnection = nil
+-- Невидимка (Invis Godmode)
+local invisRunning = false
 btnGod.MouseButton1Click:Connect(function()
-	if not humanoid then return end
+	if not character or not hrp then return end
 	godEnabled = not godEnabled
-	toggleColor(btnGod, godEnabled, "Immortality: ВКЛ", "Immortality: ВЫКЛ")
+	toggleColor(btnGod, godEnabled, "Invis Godmode: ВКЛ", "Invis Godmode: ВЫКЛ")
 	
 	if godEnabled then
-		humanoid.Health = humanoid.MaxHealth
-		godConnection = humanoid.HealthChanged:Connect(function(health)
-			if godEnabled and health < humanoid.MaxHealth then
-				humanoid.Health = humanoid.MaxHealth
+		invisRunning = true
+		local cam = workspace.CurrentCamera
+		local origPos = hrp.Position
+		
+		task.spawn(function()
+			while invisRunning do
+				if hrp then
+					hrp.CFrame = CFrame.new(origPos.X, -500, origPos.Z)
+					hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+				end
+				task.wait(0.1)
 			end
 		end)
+		
+		local fakeChar = Instance.new("Part")
+		fakeChar.Size = Vector3.new(2, 4, 1)
+		fakeChar.CFrame = CFrame.new(origPos)
+		fakeChar.Transparency = 0.5
+		fakeChar.Color = Color3.fromRGB(0, 255, 0)
+		fakeChar.CanCollide = true
+		fakeChar.Anchored = false
+		fakeChar.Parent = workspace
+		
+		local bv = Instance.new("BodyVelocity", fakeChar)
+		bv.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+		bv.Velocity = Vector3.new(0,0,0)
+		
+		cam.CameraSubject = fakeChar
+		
+		task.spawn(function()
+			while invisRunning do
+				local moveDirection = humanoid.MoveDirection
+				bv.Velocity = moveDirection * humanoid.WalkSpeed
+				task.wait()
+			end
+		end)
+		
+		_G.FakeCharacter = fakeChar
 	else
-		if godConnection then godConnection:Disconnect(); godConnection = nil end
-	end
-end)
-
-local upBtn = Instance.new("TextButton")
-local downBtn = Instance.new("TextButton")
-upBtn.Size = UDim2.new(0, 40, 0, 40) upBtn.Position = UDim2.new(1, -50, 0.5, -45) upBtn.BackgroundColor3 = Color3.fromRGB(35,35,35) upBtn.TextColor3 = Color3.fromRGB(255,255,255) upBtn.Text = "▲" upBtn.Font = Enum.Font.SourceSansBold upBtn.TextSize = 20 upBtn.Visible = false upBtn.Parent = screenGui
-local c1 = Instance.new("UICorner") c1.CornerRadius = UDim.new(0, 8) c1.Parent = upBtn
-downBtn.Size = UDim2.new(0, 40, 0, 40) downBtn.Position = UDim2.new(1, -50, 0.5, 5) downBtn.BackgroundColor3 = Color3.fromRGB(35,35,35) downBtn.TextColor3 = Color3.fromRGB(255,255,255) downBtn.Text = "▼" downBtn.Font = Enum.Font.SourceSansBold downBtn.TextSize = 20 downBtn.Visible = false downBtn.Parent = screenGui
-local c2 = Instance.new("UICorner") c2.CornerRadius = UDim.new(0, 8) c2.Parent = downBtn
-
-upBtn.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then flyUp = true end end)
-upBtn.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then flyUp = false end end)
-downBtn.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then flyDown = true end end)
-downBtn.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then flyDown = false end end)
-
-btnFly.MouseButton1Click:Connect(function()
-	if not hrp then return end
-	flyEnabled = not flyEnabled
-	toggleColor(btnFly, flyEnabled, "Fly (CFrame): ВКЛ", "Fly (CFrame): ВЫКЛ")
-	upBtn.Visible = flyEnabled
-	downBtn.Visible = flyEnabled
-	
-	if flyEnabled then
-		humanoid.PlatformStand = true
-	else
-		humanoid.PlatformStand = false
-		hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-	end
-end)
-
-RunService.RenderStepped:Connect(function(deltaTime)
-	if flyEnabled and hrp then
+		invisRunning = false
 		local cam = workspace.CurrentCamera
-		local moveDirection = humanoid.MoveDirection
+		cam.CameraSubject = humanoid
 		
-		local velocity = moveDirection * flySpeed * deltaTime
-		local upVector = Vector3.new(0, 0, 0)
+		if _G.FakeCharacter then
+			_G.FakeCharacter:Destroy()
+			_G.FakeCharacter = nil
+		end
 		
-		if flyUp then upVector = Vector3.new(0, flySpeed * deltaTime, 0) end
-		if flyDown then upVector = Vector3.new(0, -flySpeed * deltaTime, 0) end
-		
-		hrp.CFrame = hrp.CFrame + Vector3.new(velocity.X, 0, velocity.Z) + upVector
-		hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+		hrp.CFrame = CFrame.new(hrp.Position.X, 10, hrp.Position.Z)
+	end
+end)
+
+-- Скрипт бесконечного прыжка
+btnInfJump.MouseButton1Click:Connect(function()
+	infJumpEnabled = not infJumpEnabled
+	toggleColor(btnInfJump, infJumpEnabled, "Inf Jump: ВКЛ", "Inf Jump: ВЫКЛ")
+end)
+
+UserInputService.JumpRequest:Connect(function()
+	if infJumpEnabled and humanoid then
+		humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 	end
 end)
 
