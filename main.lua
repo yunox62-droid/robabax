@@ -3,14 +3,25 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
+local function log(message)
+	print("[ModMenu Log]: " .. tostring(message))
+end
+
+log("Start initialization...")
+
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "FinalTrueModMenu"
 screenGui.ResetOnSpawn = false
 
-local successGui, errGui = pcall(function()
+local successPG, errPG = pcall(function()
 	screenGui.Parent = localPlayer:WaitForChild("PlayerGui")
 end)
-if not successGui then screenGui.Parent = script.Parent end
+
+if successPG then
+	log("UI added to PlayerGui")
+else
+	log("CRITICAL ERROR: " .. tostring(errPG))
+end
 
 local openButton = Instance.new("TextButton")
 openButton.Size = UDim2.new(0, 50, 0, 50)
@@ -69,8 +80,11 @@ local btnFly = createModButton("Fly: ВЫКЛ", 150)
 local btnBoost = createModButton("Boost Up 🚀", 200)
 btnBoost.BackgroundColor3 = Color3.fromRGB(50, 150, 250)
 
+log("Buttons created")
+
 openButton.MouseButton1Click:Connect(function()
 	mainFrame.Visible = not mainFrame.Visible
+	log("Menu visibility: " .. tostring(mainFrame.Visible))
 end)
 
 local function toggleColor(btn, state, textOn, textOff)
@@ -96,11 +110,10 @@ local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart", 5)
 local humanoid = character:WaitForChild("Humanoid", 5)
 
-local savedCFrame = nil
-local flyPart = nil
-local godRenderConnection = nil
+log("Character found")
 
 localPlayer.CharacterAdded:Connect(function(newChar)
+	log("Character respawned")
 	character = newChar
 	hrp = newChar:WaitForChild("HumanoidRootPart", 5)
 	humanoid = newChar:WaitForChild("Humanoid", 5)
@@ -150,6 +163,7 @@ end
 btnWH.MouseButton1Click:Connect(function()
 	whEnabled = not whEnabled
 	toggleColor(btnWH, whEnabled, "WallHack: ВКЛ", "WallHack: ВЫКЛ")
+	log("WH toggle: " .. tostring(whEnabled))
 	if not whEnabled then
 		for p, h in pairs(highlights) do pcall(function() h:Destroy() end) end
 		table.clear(highlights)
@@ -161,13 +175,26 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 task.spawn(function()
-	while true do pcall(updateWH); task.wait(0.5) end
+	while true do 
+		local s, e = pcall(updateWH)
+		if not s then log("WH Error: " .. tostring(e)) end
+		task.wait(0.5) 
+	end
 end)
 
+local savedCFrame = nil
+local flyPart = nil
+local godRenderConnection = nil
+
 btnGod.MouseButton1Click:Connect(function()
-	if not hrp or not humanoid then return end
+	if not hrp or not humanoid then 
+		log("HRP or Humanoid missing!")
+		return 
+	end
+	
 	godEnabled = not godEnabled
 	toggleColor(btnGod, godEnabled, "Immortality: ВКЛ", "Immortality: ВЫКЛ")
+	log("God toggle: " .. tostring(godEnabled))
 	
 	if godEnabled then
 		savedCFrame = hrp.CFrame
@@ -186,21 +213,11 @@ btnGod.MouseButton1Click:Connect(function()
 		cam.CameraSubject = flyPart
 		
 		godRenderConnection = RunService.RenderStepped:Connect(function(deltaTime)
-			local cam = workspace.CurrentCamera
-			local moveDirection = Vector3.new(0, 0, 0)
-			
-			if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDirection += cam.CFrame.LookVector end
-			if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDirection -= cam.CFrame.LookVector end
-			if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDirection -= cam.CFrame.RightVector end
-			if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDirection += cam.CFrame.RightVector end
-			if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDirection += Vector3.new(0, 1, 0) end
-			if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDirection -= Vector3.new(0, 1, 0) end
-			
+			local moveDirection = humanoid.MoveDirection
 			if moveDirection.Magnitude > 0 then
-				flyPart.CFrame = flyPart.CFrame + (moveDirection.Unit * flySpeed * deltaTime)
+				flyPart.CFrame = flyPart.CFrame + (moveDirection * flySpeed * deltaTime)
 			end
 		end)
-		
 	else
 		if godRenderConnection then godRenderConnection:Disconnect(); godRenderConnection = nil end
 		if flyPart then flyPart:Destroy(); flyPart = nil end
@@ -218,6 +235,7 @@ btnFly.MouseButton1Click:Connect(function()
 	if not hrp or not humanoid then return end
 	flyEnabled = not flyEnabled
 	toggleColor(btnFly, flyEnabled, "Fly: ВКЛ", "Fly: ВЫКЛ")
+	log("Fly toggle: " .. tostring(flyEnabled))
 	
 	if flyEnabled then
 		humanoid.PlatformStand = true
@@ -241,18 +259,11 @@ end)
 RunService.RenderStepped:Connect(function()
 	if flyEnabled and hrp and bodyVelocity and bodyGyro then
 		local cam = workspace.CurrentCamera
-		local moveDirection = Vector3.new(0,0,0)
-		
-		if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDirection += cam.CFrame.LookVector end
-		if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDirection -= cam.CFrame.LookVector end
-		if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDirection -= cam.CFrame.RightVector end
-		if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDirection += cam.CFrame.RightVector end
-		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDirection += Vector3.new(0,1,0) end
-		if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDirection -= Vector3.new(0,1,0) end
+		local moveDirection = humanoid.MoveDirection
 		
 		bodyGyro.CFrame = cam.CFrame
 		if moveDirection.Magnitude > 0 then
-			bodyVelocity.Velocity = moveDirection.Unit * flySpeed
+			bodyVelocity.Velocity = moveDirection * flySpeed
 		else
 			bodyVelocity.Velocity = Vector3.new(0,0,0)
 		end
@@ -260,5 +271,12 @@ RunService.RenderStepped:Connect(function()
 end)
 
 btnBoost.MouseButton1Click:Connect(function()
-	if hrp then hrp.AssemblyLinearVelocity = Vector3.new(0, 200, 0) end
+	if hrp then 
+		hrp.AssemblyLinearVelocity = Vector3.new(0, 200, 0) 
+		log("Boost applied")
+	else
+		log("Boost failed: HRP missing")
+	end
 end)
+
+log("Initialization complete")
