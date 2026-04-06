@@ -3,12 +3,12 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
-if game:GetService("CoreGui"):FindFirstChild("TruePremiumMenu_V17") then
-	game:GetService("CoreGui").TruePremiumMenu_V17:Destroy()
+if game:GetService("CoreGui"):FindFirstChild("TruePremiumMenu_V19") then
+	game:GetService("CoreGui").TruePremiumMenu_V19:Destroy()
 end
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TruePremiumMenu_V17"
+screenGui.Name = "TruePremiumMenu_V19"
 screenGui.ResetOnSpawn = false
 pcall(function()
 	screenGui.Parent = game:GetService("CoreGui")
@@ -55,8 +55,8 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 260, 0, 630)
-mainFrame.Position = UDim2.new(0.5, -130, 0.5, -315)
+mainFrame.Size = UDim2.new(0, 260, 0, 735)
+mainFrame.Position = UDim2.new(0.5, -130, 0.5, -367)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.Visible = false
 mainFrame.ClipsDescendants = true
@@ -75,7 +75,7 @@ local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, 0, 0, 45)
 titleLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.Text = "PREMIUM MENU V17"
+titleLabel.Text = "PREMIUM MENU V19"
 titleLabel.Font = Enum.Font.GothamBold
 titleLabel.TextSize = 14
 titleLabel.Parent = mainFrame
@@ -140,19 +140,22 @@ end
 
 local btnWH, strWH = createModButton("WallHack: ВЫКЛ", 55)
 local btnHitbox, strHitbox = createModButton("Big Hitboxes: ВЫКЛ", 90)
-local btnFly, strFly = createModButton("Fly Mode: ВЫКЛ", 125)
-local btnTpClick, strTpClick = createModButton("Double Tap TP: ВЫКЛ", 160)
-local btnInfJump, strInfJump = createModButton("Inf Jump: ВЫКЛ", 195)
+local btnLinger, strLinger = createModButton("Player Launcher: ВЫКЛ", 125)
+local btnFreeze, strFreeze = createModButton("Freeze Player: ВЫКЛ", 160)
+local btnInvis, strInvis = createModButton("Invisible Mode: ВЫКЛ", 195)
+local btnFly, strFly = createModButton("Fly Mode: ВЫКЛ", 230)
+local btnTpClick, strTpClick = createModButton("Double Tap TP: ВЫКЛ", 265)
+local btnInfJump, strInfJump = createModButton("Inf Jump: ВЫКЛ", 300)
 
-local btnNoclip1, strNoclip1 = createModButton("Noclip V1 (Classic): ВЫКЛ", 235)
-local btnNoclip2, strNoclip2 = createModButton("Noclip V2 (Matrix): ВЫКЛ", 270)
-local btnNoclip3, strNoclip3 = createModButton("Noclip V3 (Physics): ВЫКЛ", 305)
-local btnNoclip4, strNoclip4 = createModButton("Noclip V4 (Camera): ВЫКЛ", 340)
+local btnNoclip1, strNoclip1 = createModButton("Noclip V1 (Classic): ВЫКЛ", 340)
+local btnNoclip2, strNoclip2 = createModButton("Noclip V2 (Matrix): ВЫКЛ", 375)
+local btnNoclip3, strNoclip3 = createModButton("Noclip V3 (Physics): ВЫКЛ", 410)
+local btnNoclip4, strNoclip4 = createModButton("Noclip V4 (Camera): ВЫКЛ", 445)
 
-local inputHitboxSize = createTextBox("Размер Хитбокса (Базово 4)", 385)
-local inputFlySpeed = createTextBox("Скорость Полёта (Базово 50)", 425)
-local inputSpeed = createTextBox("Скорость бега", 465)
-local inputJump = createTextBox("Сила прыжка", 505)
+local inputHitboxSize = createTextBox("Размер Хитбокса (Базово 4)", 490)
+local inputFlySpeed = createTextBox("Скорость Полёта (Базово 50)", 530)
+local inputSpeed = createTextBox("Скорость бега", 570)
+local inputJump = createTextBox("Сила прыжка", 610)
 
 openButton.MouseButton1Click:Connect(function() mainFrame.Visible = not mainFrame.Visible end)
 closeButton.MouseButton1Click:Connect(function() mainFrame.Visible = false end)
@@ -186,6 +189,7 @@ local function toggleColor(btn, stroke, state, textOn, textOff)
 end
 
 local whEnabled, hitboxEnabled, flyEnabled, tpEnabled, infJumpEnabled = false, false, false, false, false
+local launcherEnabled, freezeEnabled, invisEnabled = false, false, false
 local noclip1, noclip2, noclip3, noclip4 = false, false, false, false
 local flySpeed = 50
 local hitboxSize = 4
@@ -196,6 +200,117 @@ local humanoid = character:WaitForChild("Humanoid")
 
 localPlayer.CharacterAdded:Connect(function(newChar)
 	character = newChar hrp = newChar:WaitForChild("HumanoidRootPart") humanoid = newChar:WaitForChild("Humanoid")
+end)
+
+btnFreeze.MouseButton1Click:Connect(function()
+	freezeEnabled = not freezeEnabled
+	toggleColor(btnFreeze, strFreeze, freezeEnabled, "Freeze Player: ВКЛ", "Freeze Player: ВЫКЛ")
+end)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+	if freezeEnabled and not processed and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+		local cam = workspace.CurrentCamera
+		local unitRay = cam:ScreenPointToRay(input.Position.X, input.Position.Y)
+		local raycastResult = workspace:Raycast(unitRay.Origin, unitRay.Direction * 1000)
+		
+		if raycastResult and raycastResult.Instance then
+			local hitModel = raycastResult.Instance:FindFirstAncestorOfClass("Model")
+			if hitModel and hitModel:FindFirstChild("Humanoid") and hitModel ~= character then
+				local targetHrp = hitModel:FindFirstChild("HumanoidRootPart")
+				if targetHrp and hrp then
+					local oldPos = hrp.CFrame
+					hrp.CFrame = targetHrp.CFrame
+					task.wait(0.1)
+					hrp.Anchored = true
+					
+					local rope = Instance.new("RopeConstraint")
+					rope.Attachment0 = hrp:FindFirstChildOfClass("Attachment") or Instance.new("Attachment", hrp)
+					rope.Attachment1 = targetHrp:FindFirstChildOfClass("Attachment") or Instance.new("Attachment", targetHrp)
+					rope.Length = 0.1
+					rope.Visible = false
+					rope.Parent = hrp
+					
+					task.wait(3)
+					
+					rope:Destroy()
+					hrp.Anchored = false
+					hrp.CFrame = oldPos
+				end
+			end
+		end
+	end
+end)
+
+btnInvis.MouseButton1Click:Connect(function()
+	invisEnabled = not invisEnabled
+	toggleColor(btnInvis, strInvis, invisEnabled, "Invisible Mode: ВКЛ", "Invisible Mode: ВЫКЛ")
+	
+	if character and hrp then
+		if invisEnabled then
+			local clone = hrp.CFrame
+			character:MoveTo(Vector3.new(0, -500, 0))
+			task.wait(0.1)
+			local fakeObj = Instance.new("Part", workspace)
+			fakeObj.Size = Vector3.new(1,1,1)
+			fakeObj.Transparency = 1
+			fakeObj.Anchored = true
+			fakeObj.CFrame = clone
+			fakeObj.Name = "FakePoint"
+			
+			task.spawn(function()
+				while invisEnabled and character do
+					hrp.Velocity = Vector3.new(0,0,0)
+					task.wait()
+				end
+				if fakeObj then fakeObj:Destroy() end
+				character:MoveTo(clone.Position)
+			end)
+		end
+	end
+end)
+
+btnLinger.MouseButton1Click:Connect(function()
+	launcherEnabled = not launcherEnabled
+	toggleColor(btnLinger, strLinger, launcherEnabled, "Player Launcher: ВКЛ", "Player Launcher: ВЫКЛ")
+end)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+	if launcherEnabled and not processed and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+		local cam = workspace.CurrentCamera
+		local unitRay = cam:ScreenPointToRay(input.Position.X, input.Position.Y)
+		local raycastResult = workspace:Raycast(unitRay.Origin, unitRay.Direction * 1000)
+		
+		if raycastResult and raycastResult.Instance then
+			local hitModel = raycastResult.Instance:FindFirstAncestorOfClass("Model")
+			if hitModel and hitModel:FindFirstChild("Humanoid") and hitModel ~= character then
+				local targetHrp = hitModel:FindFirstChild("HumanoidRootPart")
+				if targetHrp and hrp then
+					local oldPos = hrp.CFrame
+					
+					local bV = Instance.new("BodyVelocity")
+					bV.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+					bV.Velocity = Vector3.new(0, 1000, 0)
+					bV.Parent = hrp
+					
+					local bA = Instance.new("BodyAngularVelocity")
+					bA.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+					bA.AngularVelocity = Vector3.new(0, 1000, 0)
+					bA.Parent = hrp
+					
+					for i = 1, 15 do
+						hrp.CFrame = targetHrp.CFrame
+						task.wait()
+					end
+					
+					bV:Destroy()
+					bA:Destroy()
+					hrp.CFrame = oldPos
+					hrp.AssemblyLinearVelocity = Vector3.new(0,0,0)
+					hrp.AssemblyAngularVelocity = Vector3.new(0,0,0)
+				end
+			end
+		end
+	end
 end)
 
 btnHitbox.MouseButton1Click:Connect(function()
